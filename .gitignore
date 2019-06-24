@@ -13,6 +13,8 @@ Publish_Tool/*
 !Publish_Tool/*.h
 !Publish_Tool/*.cpp
 !Publish_Tool/*.txt
+!Publish_Tool/*.dll
+!Publish_Tool/*.lib
 
 Publish_Tool.sdf
 Publish_Tool.sln

@@ -8,6 +8,9 @@
 #include "afxwin.h"
 
 
+#include "Dev_drive.h"
+
+
 // CPublish_ToolDlg ¶Ô»°¿ò
 class CPublish_ToolDlg : public CDialogEx
 {
@@ -467,4 +470,9 @@ public:
 	CButton m_mPoliceCase6;
 	afx_msg void OnBnClickedButtonPolSelectAll();
 	CButton m_mActivateCos;
+
+public:
+	HDEV hDevice;
+	PDRIVE_METH m_pMeth;
+
 };

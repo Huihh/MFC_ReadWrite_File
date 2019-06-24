@@ -17,7 +17,7 @@
 #include "polarssl/rsa.h"
 #include "polarssl/sm2.h"
 
-
+#pragma comment(lib,"CCWinDriver.lib")
 
 
 
@@ -335,7 +335,7 @@ BOOL CPublish_ToolDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-
+	CC_GetDriveMeth(&m_pMeth, 0);
 
 	pWinThread = NULL;
 	ThreadInfo.pDlg = this;
@@ -871,14 +871,14 @@ CString CPublish_ToolDlg::SendCommandGetValueOrSW(CString sCmd, int Flag)
 	int Rtn;
 	CString sSW;
 
-	BYTE ascCmd[1024] = {0};    //开由256->1024   是因为写DGI = 0201时会报错    by Huihh 2016.11.11  
+	BYTE ascCmd[12*1024] = {0};    //开由256->1024   是因为写DGI = 0201时会报错    by Huihh 2016.11.11  
 	WORD ascCmdLen = 0;
 
-	BYTE hexCmd[1024] = {0};
+	BYTE hexCmd[12*1024] = {0};
 	WORD hexCmdLen = 0;
 
-	BYTE RecvBuf[1024] = {0};
-	unsigned long RecvBufLen = 1024;  //Must unsigned long Type, Otherwise TransmitData_PCSC Execute Will Failed, 256->1024, 解决了LE=0xFF时, 调用接口函数 SCardTransmit(...)时错误  by Huihh 2018.05.15 
+	BYTE RecvBuf[12*1024] = {0};
+	unsigned long RecvBufLen = 4*1024; 
 
 	CString sDisp, sTemp;
 
@@ -923,12 +923,37 @@ CString CPublish_ToolDlg::SendCommandGetValueOrSW(CString sCmd, int Flag)
 	}
 
 
-	Rtn = TransmitData_PCSC(hexCmd, hexCmdLen, RecvBuf, &RecvBufLen);
-	if (Rtn != SCARD_S_SUCCESS)
+ww:
+	if (Rtn = m_pMeth->WriteDeviceData(hDevice, hexCmd, hexCmdLen))
 	{
-		AfxMessageBox(_T("SendCommand Failed , You Should Try Again After Reset"));
-		return NULL;
+		AfxMessageBox(_T("写数据到设备失败！"));
+		goto err;
 	}
+	do
+	{
+		if (Rtn = m_pMeth->ReadDeviceData(hDevice, RecvBuf, &RecvBufLen))
+		{
+			if (Rtn == DR_RD_BUSY)
+			{
+				//Sleep(10);
+				continue;
+			}
+			else if (Rtn == DR_RD_DATA)
+			{
+				goto ww;
+			}
+			else
+			{
+				AfxMessageBox(_T("从设备读数据失败！"));
+				goto err;
+			}
+		}
+		else {
+			break;
+		}
+
+	} while (1);
+
 
 	sDisp = "<--: ";
 	for (int i=0; i<RecvBufLen; i++)
@@ -955,74 +980,12 @@ CString CPublish_ToolDlg::SendCommandGetValueOrSW(CString sCmd, int Flag)
 
 	/********************************** 开始   验证COS 状态, 该处特殊处理   by huihh 2018.05.17        ******************************************************************/
 
- 
-	if ( ((RecvBuf[RecvBufLen - 2] == 0x66) && (RecvBuf[RecvBufLen - 1] == 0x70))       \
-		|| ((RecvBuf[RecvBufLen - 2] == 0x66) && (RecvBuf[RecvBufLen - 1] == 0x71))     \
-		|| ((RecvBuf[RecvBufLen - 2] == 0x66) && (RecvBuf[RecvBufLen - 1] == 0x72))     \
-		)
-	{
-		if (Flag != 3)  //不显示  by Huihh 2017.08.30
-		{
-			if ((RecvBuf[RecvBufLen - 2] == 0x66) && (RecvBuf[RecvBufLen - 1] == 0x70))
-				ShowMessageStringAlert(sDisp, COLOR_RED);
-
-			if ((RecvBuf[RecvBufLen - 2] == 0x66) && (RecvBuf[RecvBufLen - 1] == 0x71))
-				ShowMessageStringAlert(sDisp, COLOR_GREEN);
-
-			if ((RecvBuf[RecvBufLen - 2] == 0x66) && (RecvBuf[RecvBufLen - 1] == 0x72))
-				ShowMessageStringAlert(sDisp, COLOR_BLUE);
-		}
+	if (sSW == "9000") {
+		ShowMessageString(sDisp);
 	}
-	else
-	{
-		if (Flag != 3)  //不显示  by Huihh 2017.08.30
-		{
-			ShowMessageString(sDisp);
-		}
+	else {
+		ShowMessageStringAlert(sDisp, COLOR_RED);
 	}
-
-	/**********************************  结束  验证COS 状态, 该处特殊处理   by huihh 2018.05.17        ******************************************************************/
-
-
-//以下 "/* */" 之间的内容与上面验证二者之选其一   by Huihh 2018.05.17
-/*
-	if ((RecvBuf[RecvBufLen-2] == 0x90) && (RecvBuf[RecvBufLen-1] == 0x00))   
-	{
-		if (Flag != 3)  //不显示  by Huihh 2017.08.30
-		{
-			ShowMessageString(sDisp);
-		}
-	}
-	else
-	{
-		if (Flag == 2)   //删除时返回6A88，特殊处理   by Huihh 2017.08.30
-		{
-			if ((RecvBuf[RecvBufLen - 2] == 0x6A) && (RecvBuf[RecvBufLen - 1] == 0x88))
-			{
-				ShowMessageStringAlert(sDisp, COLOR_RED);
-				return sSW;
-			}
-		}
-
-		if (Flag != 3)  //不显示  by Huihh 2017.08.30
-		{
-			ShowMessageStringAlert(sDisp, COLOR_RED);
-		}
-
-		ShowMessageStringAlert(_T("执行失败"), COLOR_RED);
-
-		//指令执行失败之后, 需要释放按钮    by Huihh 2018.05.17
-		GetDlgItem(IDC_BUTTON_EXECUTE)->EnableWindow(TRUE);   
-		GetDlgItem(IDC_BUTTON_FS_SELECT_ALL)->EnableWindow(TRUE);
-		GetDlgItem(IDC_BUTTON_BUSNISS_SELECT_ALL)->EnableWindow(TRUE);
-		GetDlgItem(IDC_BUTTON_IKI_SELECT_ALL)->EnableWindow(TRUE);
-	
-
-
-		TerminateThreadExecute(pWinThread);              //by Huihh 2017.08.18
-	}
-*/
-
 
 	if ( (Flag == 0) || (Flag == 3) ) //return value         3用于不显示指令 by Huihh 2017.08.30
 	{
@@ -1032,6 +995,12 @@ CString CPublish_ToolDlg::SendCommandGetValueOrSW(CString sCmd, int Flag)
 	{
 		return sSW;
 	}
+
+
+
+err:
+	m_pMeth->CloseDevice(hDevice);
+	return NULL;
 
 }
 
@@ -1192,128 +1161,62 @@ void CPublish_ToolDlg::OnClickedButtonRefreshReader()
 {
 	// TODO: 在此添加控件通知处理程序代码
 
-	LPTSTR		pReader;
-	CString		Reader = "";
+	TCHAR buf[128] = { 0 };
+	CString str;
+	DWORD len = GetLogicalDriveStrings(sizeof(buf) / sizeof(TCHAR), buf);
+	UINT uType = 0, exist = 0;
+	TCHAR* p = NULL;
 
-
-	dwRetCode = SCardEstablishContext(SCARD_SCOPE_USER, NULL, NULL, &hContext);
-	if (dwRetCode != SCARD_S_SUCCESS)
-	{
-		AfxMessageBox(_T("Refresh Failed, Please Check Reader Connection is OK ?"));
-		return ;
+	for (p = buf; *p; p += (_tcslen(p) + 1)) {
+		LPCTSTR sDrivePath = p;
+		str = sDrivePath;
+		str.Delete(2, 1);
+		uType = GetDriveType(str);
+		if (uType == DRIVE_REMOVABLE) {
+			SetDlgItemText(IDC_COMBO_PORT, str);
+			exist = 1;
+		}
 	}
 
-	ReaderBufLen = 256;   //Must Init This Value, Otherwise  lead to invoking SCardListReaders() Function Return Error   by Huihh 2016.9.7
-
-	dwRetCode = SCardListReadersA(hContext, NULL, ReaderBuf, &ReaderBufLen);
-	if (dwRetCode != SCARD_S_SUCCESS)
-	{
-		AfxMessageBox(_T("Acquire PCSC ReaderList Failed, Please Check Reader Exist ?"));
-		return ;
+	if (exist == 0) {
+		AfxMessageBox(_T("没有检测到 SD 卡, 请重新插拔"));
 	}
 
-	ArrayReaderList.RemoveAll();
-
-	pReader = ReaderBuf;
-	while(*pReader != '\0')
-	{
-		Reader = pReader;
-		ArrayReaderList.Add(Reader);
-		pReader = pReader + strlen(pReader) + 1;
-	}
-
-	DisplayReaders();
 }
 
 
 void CPublish_ToolDlg::OnClickedButtonOpenClose()
 {
 	// TODO: 在此添加控件通知处理程序代码
+		// TODO: 在此添加控件通知处理程序代码
+	CString sDrive, sInterface;
+	ULONG ulRet;
 
-	static int i = 0;
-
-	int Result;
-
-	if (m_mPort.GetWindowTextLengthA() == 0)	//No Reader
+	GetDlgItemText(IDC_COMBO_PORT, sDrive);
+	if (sDrive.IsEmpty()) // pan fu 
 	{
-		AfxMessageBox(_T("Please Refresh Reader"));
-		return ;
+		AfxMessageBox(_T("先设置盘符！"));
+		return;
+	}
+	sInterface = "SECOM.SCT";
+	if (sInterface.IsEmpty())
+	{
+		AfxMessageBox(_T("先设置接口文件！"));
+		return;
+	}
+	m_pMeth->SetInterfaceName(sInterface);
+
+	if (ulRet = m_pMeth->OpenDevice(sDrive, NULL, &hDevice))
+	{
+		AfxMessageBox(_T("打开设备失败！"));
+		return;
 	}
 
+	ShowMessageString(_T("打开设备成功"));
 
-	if (i == 0)
-	{
-		i = 1;
-
-		dwRetCode = SCardEstablishContext(SCARD_SCOPE_USER, NULL, NULL, &hContext);
-		if (dwRetCode != SCARD_S_SUCCESS)
-		{
-			AfxMessageBox(_T("Refresh Failed, Please Check Reader Connection is OK ?"));
-			return ;
-		}
-
-		Result = ResetCard();
-		if (Result == 1)
-		{
-			AfxMessageBox(_T("请放卡片之后重试"));
-			i=0;
-			return;
-		}
-		ShowMessageString("Open Succeed");
-		GetDlgItem(IDC_BUTTON_OPEN_CLOSE)->SetWindowTextA(_T("断开读卡器"));
+	GetDlgItem(IDC_BUTTON_SEND_CMD)->EnableWindow(TRUE);
 
 
-		GetDlgItem(IDC_BUTTON_FS_SELECT_ALL)->EnableWindow(TRUE);
-		GetDlgItem(IDC_BUTTON_BUSNISS_SELECT_ALL)->EnableWindow(TRUE);
-		GetDlgItem(IDC_BUTTON_IKI_SELECT_ALL)->EnableWindow(TRUE);
-		GetDlgItem(IDC_BUTTON_POL_SELECT_ALL)->EnableWindow(TRUE);
-		GetDlgItem(IDC_BUTTON_EXECUTE)->EnableWindow(TRUE);
-
-		GetDlgItem(IDC_BUTTON_SEND_CMD)->EnableWindow(TRUE);
-
-		GetDlgItem(IDC_BUTTON_GET_CURRENT_STATE)->EnableWindow(TRUE);
-		GetDlgItem(IDC_BUTTON_SET_STATE)->EnableWindow(TRUE);
-
-		return ;
-	}
-	else
-	{
-		i = 0;
-		if (hContext != NULL)
-		{
-			if (hCard != NULL)
-			{
-				dwRetCode = SCardEndTransaction(hCard, SCARD_LEAVE_CARD);
-				dwRetCode = SCardDisconnect(hCard, SCARD_RESET_CARD);
-				hCard = NULL;
-			}
-
-			dwRetCode = SCardReleaseContext(hContext);
-			hContext = NULL;
-		}
-
-		if (dwRetCode != SCARD_S_SUCCESS)
-		{
-			AfxMessageBox(_T("Close Failed, Please Try Again Later"));
-			return ;
-		}
-
-		ShowMessageString("Close Succeed");
-		GetDlgItem(IDC_BUTTON_OPEN_CLOSE)->SetWindowTextA(_T("连接读卡器"));
-
-		GetDlgItem(IDC_BUTTON_FS_SELECT_ALL)->EnableWindow(FALSE);
-		GetDlgItem(IDC_BUTTON_BUSNISS_SELECT_ALL)->EnableWindow(FALSE);
-		GetDlgItem(IDC_BUTTON_IKI_SELECT_ALL)->EnableWindow(FALSE);
-		GetDlgItem(IDC_BUTTON_POL_SELECT_ALL)->EnableWindow(FALSE);
-		GetDlgItem(IDC_BUTTON_EXECUTE)->EnableWindow(FALSE);
-
-		GetDlgItem(IDC_BUTTON_SEND_CMD)->EnableWindow(FALSE);
-
-		GetDlgItem(IDC_BUTTON_GET_CURRENT_STATE)->EnableWindow(FALSE);
-		GetDlgItem(IDC_BUTTON_SET_STATE)->EnableWindow(FALSE);
-
-
-	}
 }
 
 
@@ -7645,16 +7548,19 @@ void CPublish_ToolDlg::OnBnClickedButtonPolSelectAll()
 void CPublish_ToolDlg::OnBnClickedButtonSendCmd()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	CString str;
+	CString str, sRet;
 	m_mSingleCmd.GetWindowTextA(str);
 
 	if (str == "\0")
 		AfxMessageBox(_T("请输入要下发的指令"));
 	else {
-		//SendCommandGetValueOrSW("3305000000", 1);
-		SendCommandGetValueOrSW(str, 1);
-	}
+		
+		sRet = SendCommandGetValueOrSW(str, 1);
 
+		if (sRet == "") {
+			AfxMessageBox(_T("指令发送失败"));
+		}
+	}
 }
 
 
