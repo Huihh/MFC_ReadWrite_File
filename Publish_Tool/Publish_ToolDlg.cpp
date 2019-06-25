@@ -42,8 +42,6 @@ struct threadInfo
 }ThreadInfo;
 
 
-
-
 BYTE	GP_KEY_ENC[16] = {0x40,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4A,0x4B,0x4C,0x4D,0x4E,0x4F};
 BYTE	GP_KEY_MAC[16] = {0x40,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4A,0x4B,0x4C,0x4D,0x4E,0x4F};
 BYTE	GP_KEY_DEK[16] = {0x40,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4A,0x4B,0x4C,0x4D,0x4E,0x4F};
@@ -903,6 +901,8 @@ CString CPublish_ToolDlg::SendCommandGetValueOrSW(CString sCmd, int Flag)
 		return NULL;
 	}
 
+	sCmd = "06" + sCmd;
+
 	strcpy((char *)ascCmd, sCmd);
 	ascCmdLen = strlen((char *)ascCmd);
 
@@ -910,9 +910,9 @@ CString CPublish_ToolDlg::SendCommandGetValueOrSW(CString sCmd, int Flag)
 	hexCmdLen = ascCmdLen / 2;
 
 	sDisp = "-->: ";
-	for (int i=0; i<hexCmdLen; i++)
+	for (int i=0; i<(hexCmdLen-1); i++)
 	{
-		sTemp.Format("%02x", hexCmd[i]);
+		sTemp.Format("%02x", hexCmd[i+1]);
 		sDisp += sTemp;
 	}
 	sDisp.MakeUpper();
@@ -977,8 +977,6 @@ ww:
 	sValue.MakeUpper();
 	sSW.MakeUpper();
 
-
-	/********************************** 开始   验证COS 状态, 该处特殊处理   by huihh 2018.05.17        ******************************************************************/
 
 	if (sSW == "9000") {
 		ShowMessageString(sDisp);
@@ -1215,7 +1213,11 @@ void CPublish_ToolDlg::OnClickedButtonOpenClose()
 	ShowMessageString(_T("打开设备成功"));
 
 	GetDlgItem(IDC_BUTTON_SEND_CMD)->EnableWindow(TRUE);
-
+	GetDlgItem(IDC_BUTTON_FS_SELECT_ALL)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_BUSNISS_SELECT_ALL)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_IKI_SELECT_ALL)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_POL_SELECT_ALL)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_EXECUTE)->EnableWindow(TRUE);
 
 }
 
@@ -1421,8 +1423,8 @@ int CPublish_ToolDlg::Process_Execute(LPVOID pPram)
 #define    	SKF_MODIFY_DEVICE_AUTH_KEY_CMD				"0024020020"
 #define    	SKF_MODIFY_PIN_CMD							"0024010080"
 #define    	SKF_GET_SESSION_KEY_CMD						"004700000411223344"  //TODO
-#define    	SKF_GENARATE_RSA_KEY_PAIR_CMD				"00460000020400"
-#define    	SKF_GENARATE_SM2_KEY_PAIR_CMD				"00460100020100"
+#define    	SKF_GENARATE_RSA_KEY_PAIR_CMD				"0046000002040080"
+#define    	SKF_GENARATE_SM2_KEY_PAIR_CMD				"0046010002010040"
 #define    	SKF_GET_PUB_KEY_CMD							"80E600000411223344"  //TODO
 #define    	SKF_GET_RSA_PUB_KEY_CMD                     "80E61B0080"
 #define    	SKF_VERIFY_PIN_CMD							"0020000180" 
@@ -1461,7 +1463,7 @@ int CPublish_ToolDlg::Process_Execute(LPVOID pPram)
 
 
 //指令显示标志位
-#define		FIRST_FLAG	3
+#define		FIRST_FLAG	1
 #define     SKF_FLAG    1
 
 
@@ -1509,7 +1511,6 @@ void CPublish_ToolDlg::SKF_CREATE_MF()
 	sCmd += "00112233"; //DevAuthAlgId
 	/** MF信息头 结束 *********************************************************************/
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1529,9 +1530,9 @@ void CPublish_ToolDlg::SKF_CREATE_DF0()
 	CString sCmd;
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	SKF_DEVICE_AUTH();
@@ -1581,7 +1582,7 @@ void CPublish_ToolDlg::SKF_CREATE_DF0()
 		
 	//sCmd += "FFFFFFFFFFFFFFFF";
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1597,14 +1598,14 @@ void CPublish_ToolDlg::SKF_CREATE_DF1()
 	ShowMessageString(_T("创建DF0文件"));
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	SKF_DEVICE_AUTH();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_CREATE_FILE_DF1_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1620,14 +1621,14 @@ void CPublish_ToolDlg::SKF_CREATE_DF2()
 	ShowMessageString(_T("创建DF0文件"));
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	SKF_DEVICE_AUTH();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_CREATE_FILE_DF2_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1645,13 +1646,13 @@ void CPublish_ToolDlg::SKF_CREATE_EF0()
 	CString sCmd;
 
 	//选择到MF
-	/*SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	/*
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	//选择到DF0
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW("00A4010002DF00", FIRST_FLAG);*/
 
 	sCmd = SKF_CREATE_FILE_EF0_CMD;
@@ -1670,7 +1671,7 @@ void CPublish_ToolDlg::SKF_CREATE_EF0()
 	//filename
 	sCmd += "0101010101010101010101010101010101010101010101010101010101010100";
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1704,7 +1705,7 @@ void CPublish_ToolDlg::SKF_CREATE_EF1()
 	//filename
 	sCmd += "0101010101010101010101010101010101010101010101010101010101010200";
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1738,7 +1739,7 @@ void CPublish_ToolDlg::SKF_CREATE_EF2()
 	//filename
 	sCmd += "0101010101010101010101010101010101010101010101010101010101010300";
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1753,12 +1754,12 @@ void CPublish_ToolDlg::SKF_DELET_FILE()
 {
 	ShowMessageString(_T("删除文件"));
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("84EE0000023F00", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1779,19 +1780,19 @@ void CPublish_ToolDlg::SKF_DELET_DF0()
 	//CString sCmd;
 
 	//选择到MF
-	/*SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	/*
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	SKF_DEVICE_AUTH();
 
 	//选择到DF0
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	//sCmd = "00A4010002DF00";
 	SendCommandGetValueOrSW("00A4010002DF00", FIRST_FLAG);*/
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("84EE01011F01020304050607080102030405060708010203040506070801020304050607", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1808,19 +1809,19 @@ void CPublish_ToolDlg::SKF_DELET_DF1()
 	//CString sCmd;
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	SKF_DEVICE_AUTH();
 
 	//选择到DF1
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	//sCmd = "00A4010002DF00";
 	SendCommandGetValueOrSW("00A4010002DF01", FIRST_FLAG);
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_DELET_FILE_DF1_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1837,19 +1838,19 @@ void CPublish_ToolDlg::SKF_DELET_DF2()
 	//CString sCmd;
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	SKF_DEVICE_AUTH();
 
 	//选择到DF2
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	//sCmd = "00A4010002DF00";
 	SendCommandGetValueOrSW("00A4010002DF02", FIRST_FLAG);
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_DELET_FILE_DF2_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1866,21 +1867,21 @@ void CPublish_ToolDlg::SKF_DELET_EF0()
 	//CString sCmd;
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	//选择到DF0
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW("00A4010002DF00", FIRST_FLAG);
 
 	//选择到EF0
-	/*SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	/*
 	//sCmd = "00A4010002DF00";
 	SendCommandGetValueOrSW("00A4010102EF00", FIRST_FLAG);*/
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_DELET_FILE_EF0_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1897,21 +1898,21 @@ void CPublish_ToolDlg::SKF_DELET_EF1()
 	//CString sCmd;
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	//选择到DF0
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW("00A4010002DF00", FIRST_FLAG);
 
 	//选择到EF1
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	//sCmd = "00A4010002DF00";
 	SendCommandGetValueOrSW("00A4010102EF01", FIRST_FLAG);
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_DELET_FILE_EF1_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1928,21 +1929,21 @@ void CPublish_ToolDlg::SKF_DELET_EF2()
 	//CString sCmd;
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	//选择到DF0
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW("00A4010002DF00", FIRST_FLAG);
 
 	//选择到EF2
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	//sCmd = "00A4010002DF00";
 	SendCommandGetValueOrSW("00A4010102EF02", FIRST_FLAG);
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_DELET_FILE_EF2_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -1958,21 +1959,21 @@ void CPublish_ToolDlg::SKF_SELECT_FILE()
 	ShowMessageString(_T("选择文件"));
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	SKF_DEVICE_AUTH();
 
 	//选择到DF0
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW("00A4010002DF00", FIRST_FLAG);
 
 	SKF_VERIFY_PIN();
 
 	//选择到DF0下的EF0文件
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW("00A4010102EF00", FIRST_FLAG);
 
 	ShowMessageString(_T("选择文件成功"));
@@ -1983,7 +1984,7 @@ void CPublish_ToolDlg::SKF_SELECT_MF()
 	ShowMessageString(_T("选择文件MF"));
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("00A4000000", FIRST_FLAG);
 	/*if (sw != "9000")
 	{
@@ -1991,7 +1992,7 @@ void CPublish_ToolDlg::SKF_SELECT_MF()
 		ShowMessageString(sw);
 		return;
 	}*/
-	//SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	//
 	//SendCommandGetValueOrSW("00A4000000", FIRST_FLAG);
 
 	ShowMessageString(_T("选择文件MF成功"));
@@ -2002,13 +2003,13 @@ void CPublish_ToolDlg::SKF_SELECT_DF0()
 	ShowMessageString(_T("选择文件DF0"));
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	//选择到DF0
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("00A40200200102030405060708010203040506070801020304050607080102030405060700", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2026,7 +2027,7 @@ void CPublish_ToolDlg::SKF_SELECT_EF0()
 	ShowMessageString(_T("选择文件EF0"));
 
 	//选择到DF0下的EF0文件
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("00A40201200101010101010101010101010101010101010101010101010101010101010100", SKF_FLAG);
 
 	ShowMessageString(_T("选择文件EF0成功"));
@@ -2036,7 +2037,7 @@ void CPublish_ToolDlg::SKF_READ_FILE()
 {
 	ShowMessageString(_T("读取文件"));
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_READ_FILE_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2052,7 +2053,7 @@ void CPublish_ToolDlg::SKF_WRITE_FILE()
 {
 	ShowMessageString(_T("写入文件"));
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_WRITE_FILE_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2068,12 +2069,12 @@ void CPublish_ToolDlg::SKF_GET_DF_LIST()
 	ShowMessageString(_T("获取应用(DF)列表"));
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_DF_LIST_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2090,16 +2091,16 @@ void CPublish_ToolDlg::SKF_GET_EF_LIST()
 	ShowMessageString(_T("获取文件(EF)列表"));
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	//选择到DF0
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW("00A4010002DF00", FIRST_FLAG);
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_EF_LIST_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2115,12 +2116,12 @@ void CPublish_ToolDlg::SKF_GET_DEV_INFO()
 {
 	ShowMessageString(_T("获取设备信息"));
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 
 	sw = SendCommandGetValueOrSW(SKF_GET_DEV_INFO_CMD, SKF_FLAG);
 	if (sw != "9000")
@@ -2141,9 +2142,9 @@ void CPublish_ToolDlg::SKF_SET_DEV_INFO()
 	CString sTemp;
 	BYTE asLable[32] = { "aaaaaaaa" };//{ 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38 };
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	for (int i = 0; i< 32; i++)
@@ -2153,7 +2154,7 @@ void CPublish_ToolDlg::SKF_SET_DEV_INFO()
 	}
 	sLable.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sLable, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2169,7 +2170,7 @@ void CPublish_ToolDlg::SKF_GET_FILE_INFO()
 {
 	ShowMessageString(_T("获取文件信息"));
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("80EA02002C", SKF_FLAG);
 	//sw = SendCommandGetValueOrSW(SKF_GET_FILE_INFO_CMD, SKF_FLAG);
 	if (sw != "9000")
@@ -2186,16 +2187,16 @@ void CPublish_ToolDlg::SKF_GET_APP_INFO()
 	ShowMessageString(_T("获取应用信息"));
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	//选择到DF0
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW("00A4010002DF00", FIRST_FLAG);
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_APP_INFO_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2217,7 +2218,7 @@ void CPublish_ToolDlg::SKF_GET_RAND()
 
 	//sCmd += "000102";
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2242,13 +2243,13 @@ void CPublish_ToolDlg::SKF_DEVICE_AUTH()
 	memcpy(asDevAuthKey, g_aCurDevAuthKey, 16);
 
 	//选择到MF
-	/*SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	/*
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);*/
 
 	//获取随机数
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RAND_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2278,7 +2279,7 @@ void CPublish_ToolDlg::SKF_DEVICE_AUTH()
 
 	//进行设备认证
 	//sAuthVal += sRandom8;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sAuthVal, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2301,9 +2302,9 @@ void CPublish_ToolDlg::SKF_MODIFY_DEV_AUTH_KEY()
 
 	memcpy(asNewDevAuthKey, g_aNewDevAuthKey, 16);
 
-	/*SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	/*
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);*/
 
 	for (int i = 0; i < 32; i += 8)
@@ -2319,7 +2320,7 @@ void CPublish_ToolDlg::SKF_MODIFY_DEV_AUTH_KEY()
 	}
 	sAuthVal.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sAuthVal, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2431,7 +2432,7 @@ void CPublish_ToolDlg::SKF_ACTIVATE_COS()
 	sCmd += sData;
 	sCmd.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2463,7 +2464,7 @@ void CPublish_ToolDlg::SKF_MODIFY_PIN()
 	CstringToByte(sPinHash, asNewPinHash);
 
 	//获取随机数
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RAND_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2482,7 +2483,7 @@ void CPublish_ToolDlg::SKF_MODIFY_PIN()
 	SKF_SELECT_DF0();
 
 	//获取RSA公钥
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RSA_PUB_KEY_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2501,7 +2502,7 @@ void CPublish_ToolDlg::SKF_MODIFY_PIN()
 	}
 	sCmd.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2528,7 +2529,7 @@ void CPublish_ToolDlg::SKF_VERIFY_PIN()
 	BYTE aRsaPubExp[4] = {0x00, 0x01, 0x00, 0x01};
 
 	//获取随机数
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RAND_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2552,7 +2553,7 @@ void CPublish_ToolDlg::SKF_VERIFY_PIN()
 	SKF_SELECT_DF0();
 
 	//获取RSA公钥
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RSA_PUB_KEY_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2580,7 +2581,7 @@ void CPublish_ToolDlg::SKF_VERIFY_PIN()
 	}
 	sCmd.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2606,7 +2607,7 @@ void CPublish_ToolDlg::SKF_VERIFY_SOPIN()
 	BYTE aRsaPubExp[4] = { 0x00, 0x01, 0x00, 0x01 };
 
 	//获取随机数
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RAND_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2622,7 +2623,7 @@ void CPublish_ToolDlg::SKF_VERIFY_SOPIN()
 	SKF_SELECT_DF0();
 
 	//获取RSA公钥
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RSA_PUB_KEY_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2641,7 +2642,7 @@ void CPublish_ToolDlg::SKF_VERIFY_SOPIN()
 	}
 	sCmd.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2674,7 +2675,7 @@ void CPublish_ToolDlg::SKF_UNLOCK_RESET_PIN()
 	CstringToByte(sPinHash, asSoPinHash);
 
 	//获取随机数
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RAND_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2693,7 +2694,7 @@ void CPublish_ToolDlg::SKF_UNLOCK_RESET_PIN()
 	SKF_SELECT_DF0();
 
 	//获取RSA公钥
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RSA_PUB_KEY_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2712,7 +2713,7 @@ void CPublish_ToolDlg::SKF_UNLOCK_RESET_PIN()
 	}
 	sCmd.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2735,7 +2736,7 @@ void CPublish_ToolDlg::SKF_GENARATE_RSA_KEY_PAIR()
 	ShowMessageString(_T("生成模长为1024b的RSA签名密钥对"));
 
 	//安全环境管理——生成rsa密钥对
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002201B80483000200", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2744,7 +2745,7 @@ void CPublish_ToolDlg::SKF_GENARATE_RSA_KEY_PAIR()
 		return;
 	}
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GENARATE_RSA_KEY_PAIR_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2760,7 +2761,7 @@ void CPublish_ToolDlg::SKF_GENARATE_SM2_KEY_PAIR()
 	ShowMessageString(_T("生成模长为64B的SM2密钥对"));
 
 	//安全环境管理——生成SM2密钥对
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002201B80483000200", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2769,7 +2770,7 @@ void CPublish_ToolDlg::SKF_GENARATE_SM2_KEY_PAIR()
 		return;
 	}
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GENARATE_SM2_KEY_PAIR_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2791,7 +2792,7 @@ void CPublish_ToolDlg::SKF_EXPORT_PSA_PUB_KEY()
 	sCmd += sKID;
 	sCmd += sKeyLen;
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2813,7 +2814,7 @@ void CPublish_ToolDlg::SKF_EXPORT_SM2_PUB_KEY()
 	sCmd += sKID;
 	sCmd += "40";
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2830,7 +2831,7 @@ void CPublish_ToolDlg::SKF_EXPORT_SM2_PUB_KEY()
 void CPublish_ToolDlg::SKF_IMPORT_PUBKEY()
 {
 	ShowMessageString(_T("导入公钥"));
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_IMPORT_PUBKEY_CMD, SKF_FLAG);
 	if ((sw != "6670") && (sw != "6671") && (sw != "6672"))
 		g_sSupportCmdList += "SKF_IMPORT_PUBKEY_CMD,  ";
@@ -2838,7 +2839,7 @@ void CPublish_ToolDlg::SKF_IMPORT_PUBKEY()
 void CPublish_ToolDlg::SKF_IMPORT_KEY()
 {
 	ShowMessageString(_T("导入密钥"));
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_IMPORT_KEY_CMD, SKF_FLAG);
 	if ((sw != "6670") && (sw != "6671") && (sw != "6672"))
 		g_sSupportCmdList += "SKF_IMPORT_KEY_CMD,  ";
@@ -2846,7 +2847,7 @@ void CPublish_ToolDlg::SKF_IMPORT_KEY()
 void CPublish_ToolDlg::SKF_DELET_KEY()
 {
 	ShowMessageString(_T("删除密钥"));
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_DELET_KEY_CMD, SKF_FLAG);
 	if ((sw != "6670") && (sw != "6671") && (sw != "6672"))
 		g_sSupportCmdList += "SKF_DELET_KEY_CMD,  ";
@@ -2864,7 +2865,7 @@ void CPublish_ToolDlg::SKF_SESSION_KEY_ALG()
 	sKeyLen = "10";
 	sCmd += sKeyLen;
 	sCmd += sSm4Key;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2886,7 +2887,7 @@ void CPublish_ToolDlg::SKF_SET_MODE()
 	sCmd = SKF_SET_MODE_CMD;
 	sSm4Mode = "01"; //01:ECB 02:CBC 04:CFB 08:OFB 10:MAC
 	sCmd += sSm4Mode;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2918,7 +2919,7 @@ void CPublish_ToolDlg::SKF_SYM_MAC()
 	sCmd += sRelVecLen;
 	sCmd += sPadTyp;
 	sCmd += sFeedBit;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2933,7 +2934,7 @@ void CPublish_ToolDlg::SKF_SYM_MAC()
 	sKeyLen = "10";
 	sCmd += sKeyLen;
 	sCmd += sSm4Key;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2948,7 +2949,7 @@ void CPublish_ToolDlg::SKF_SYM_MAC()
 	sSrcLen = "20";
 	sCmd += sSrcLen;
 	sCmd += sSrc;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2959,7 +2960,7 @@ void CPublish_ToolDlg::SKF_SYM_MAC()
 
 	//mac_final
 	sCmd = "80D7000010";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -2986,7 +2987,7 @@ void CPublish_ToolDlg::SKF_SYM_SET_KEY_RSA()
 	SKF_GENARATE_RSA_KEY_PAIR();
 
 	//获取RSA公钥
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("80E61B0280", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3005,7 +3006,7 @@ void CPublish_ToolDlg::SKF_SYM_SET_KEY_RSA()
 	}
 	sCmd.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3021,7 +3022,7 @@ void CPublish_ToolDlg::SKF_SYM_SET_KEY_RSA()
 void CPublish_ToolDlg::SKF_SYM_ENCRYPT()
 {
 	ShowMessageString(_T("对称加密"));
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_SYM_ENCRYPT_CMD, SKF_FLAG);
 	if ((sw != "6670") && (sw != "6671") && (sw != "6672"))
 		g_sSupportCmdList += "SKF_SYM_ENCRYPT_CMD,  ";
@@ -3029,7 +3030,7 @@ void CPublish_ToolDlg::SKF_SYM_ENCRYPT()
 void CPublish_ToolDlg::SKF_SYM_DECRYPT()
 {
 	ShowMessageString(_T("对称解密"));
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_SYM_DECRYPT_CMD, SKF_FLAG);
 	if ((sw != "6670") && (sw != "6671") && (sw != "6672"))
 		g_sSupportCmdList += "SKF_SYM_DECRYPT_CMD,  ";
@@ -3045,7 +3046,7 @@ void CPublish_ToolDlg::SKF_HASH_SM3()
 	sDataLen = "20";
 
 	//安全环境管理---计算HASH
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002201AA03870142", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3058,7 +3059,7 @@ void CPublish_ToolDlg::SKF_HASH_SM3()
 	sCmd = "102A9080";
 	sCmd += sDataLen;
 	sCmd += sHashData;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3069,7 +3070,7 @@ void CPublish_ToolDlg::SKF_HASH_SM3()
 
 	//hash_sm3_final
 	sCmd = "002A908020";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3091,7 +3092,7 @@ void CPublish_ToolDlg::SKF_SM2_SIGN()
 	//SKF_HASH_SM3();
 
 	//安全环境管理----sm2签名
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002241B6078001428402020A", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3103,7 +3104,7 @@ void CPublish_ToolDlg::SKF_SM2_SIGN()
 	//将哈希值放入硬件中
 	sCmd = "002A908120";
 	sCmd += g_sHashValue;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3114,7 +3115,7 @@ void CPublish_ToolDlg::SKF_SM2_SIGN()
 
 	//SM2签名
 	sCmd = "002A9E0040";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3135,7 +3136,7 @@ void CPublish_ToolDlg::SKF_SM2_VERTFY()
 	CString sCmd;
 
 	//安全环境管理----sm2验签
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002281B6078001428302020B", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3147,7 +3148,7 @@ void CPublish_ToolDlg::SKF_SM2_VERTFY()
 	//将哈希值放入硬件中
 	sCmd = "002A908120";
 	sCmd += g_sHashValue;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3159,7 +3160,7 @@ void CPublish_ToolDlg::SKF_SM2_VERTFY()
 	//SM2验签
 	sCmd = "002A00A840";
 	sCmd += g_sSignValue;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3273,9 +3274,9 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_6()
 
 	memset(asLable, 'a', 34);
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	for (int i = 0; i< 34; i++)
@@ -3285,7 +3286,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_6()
 	}
 	sLable.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sLable, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -3335,7 +3336,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_8()
 	}
 
 	SKF_SELECT_DF0();
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("84EC03000100", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3549,7 +3550,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_17()
 	SKF_VERIFY_PIN();
 
 	//安全环境管理——生成rsa密钥对
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002201B80483000200", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3558,8 +3559,8 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_17()
 		return;
 	}
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
-	sw = SendCommandGetValueOrSW("00460000020200", SKF_FLAG);
+	
+	sw = SendCommandGetValueOrSW("0046000002020040", SKF_FLAG);
 	if (sw != "9000")
 	{
 		g_ulTestErrCnt++;
@@ -3579,7 +3580,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_18()
 	SKF_VERIFY_PIN();
 
 	//安全环境管理——生成rsa密钥对
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002201B80483000200", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -3588,7 +3589,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_18()
 		return;
 	}
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("00460000020100", SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -3769,10 +3770,10 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_27()
 	SKF_DELET_FILE();
 	SKF_CREATE_MF();
 	
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_CREATE_FILE_DF1_CMD, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -4195,7 +4196,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_41()
 	}
 
 	sCmd = "00D60100082122232425262728";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -4239,7 +4240,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_42()
 	}
 
 	sCmd = "00D600001021222324252627283132333435363738";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -4283,7 +4284,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_43()
 	}
 
 	sCmd = "00B0001008";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -4328,7 +4329,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_44()
 
 	//读文件偏移量超过文件大小会返回文件剩下的内容，不会返错
 	/*sCmd = "00B000020F";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -4627,7 +4628,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_55()
 	}
 
 	//获取随机数
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RAND_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -4646,7 +4647,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_55()
 	SKF_SELECT_DF0();
 
 	//获取RSA公钥
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RSA_PUB_KEY_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -4665,7 +4666,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_55()
 	}
 	sCmd.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -4751,7 +4752,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_57()
 	}
 
 	//获取随机数
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RAND_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -4768,7 +4769,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_57()
 	for (int i = 0; i < 64; i++) aPlainData[i] ^= asRandData[i % 8];
 
 	//获取RSA公钥
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RSA_PUB_KEY_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -4787,7 +4788,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_57()
 	}
 	sCmd.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -4827,7 +4828,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_58()
 	}
 
 	//获取随机数
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RAND_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -4846,7 +4847,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_58()
 	SKF_SELECT_DF0();
 
 	//获取RSA公钥
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RSA_PUB_KEY_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -4865,7 +4866,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_58()
 	}
 	sCmd.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -4914,7 +4915,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_59()
 	}
 
 	//获取随机数
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RAND_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -4933,7 +4934,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_59()
 	SKF_SELECT_DF0();
 
 	//获取RSA公钥
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RSA_PUB_KEY_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -4952,7 +4953,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_59()
 	}
 	sCmd.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5271,9 +5272,9 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_71()
 
 	SKF_SELECT_DF0();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_DEV_INFO_CMD, SKF_FLAG);
-	if (sw != "6985")
+	if (sw != "6613")
 	{
 		g_ulTestErrCnt++;
 		g_sTestErrList += "71, ";
@@ -5313,9 +5314,9 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_72()
 		return;
 	}
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_DEV_INFO_CMD, SKF_FLAG);
-	if (sw != "6985")
+	if (sw != "6613")
 	{
 		g_ulTestErrCnt++;
 		g_sTestErrList += "72, ";
@@ -5361,13 +5362,13 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_74()
 	sAuthVal = SKF_DEVICE_AUTH_CMD;
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	//获取随机数
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RAND_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -5388,7 +5389,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_74()
 	sAuthVal.MakeUpper();
 
 	//进行设备认证
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sAuthVal, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5411,13 +5412,13 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_75()
 	sAuthVal = SKF_DEVICE_AUTH_CMD;
 
 	//选择到MF
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW(SELECT_FATHER, FIRST_FLAG);
 
 	//获取随机数
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GET_RAND_CMD, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -5438,7 +5439,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_75()
 	sAuthVal.MakeUpper();
 
 	//进行设备认证
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sAuthVal, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5492,7 +5493,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_76()
 	}
 	sLable.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sLable, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5537,7 +5538,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_77()
 	}
 	sLable.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sLable, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5556,7 +5557,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_78()
 	SKF_CREATE_MF();
 	SKF_SELECT_MF();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("84EC03000100", SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5599,7 +5600,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_79()
 	}
 
 	SKF_SELECT_EF0();
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("84EC03000100", SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5664,7 +5665,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_82()
 	CString sCmd;
 
 	sCmd = "0084000007";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5683,7 +5684,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_83()
 	CString sCmd;
 
 	sCmd = "0084000000";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5735,7 +5736,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_85()
 		return;
 	}
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GENARATE_SM2_KEY_PAIR_CMD, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5770,7 +5771,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_86()
 	}
 
 	//安全环境管理---计算HASH
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002201AA03870142", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -5779,7 +5780,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_86()
 		return;
 	}
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(SKF_GENARATE_SM2_KEY_PAIR_CMD, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5810,7 +5811,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_87()
 	SKF_VERIFY_PIN();
 
 	//安全环境管理——生成rsa密钥对
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002201B80483000200", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -5819,8 +5820,8 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_87()
 		return;
 	}
 
-	sCmd = "00460000020800";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	sCmd = "004600000208000001";
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -5851,7 +5852,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_88()
 	SKF_VERIFY_PIN();
 
 	//安全环境管理——生成rsa密钥对
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002201B80483000200", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -5861,7 +5862,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_88()
 	}
 
 	sCmd = "00460000021000";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5889,7 +5890,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_89()
 	SKF_SELECT_DF0();
 	SKF_VERIFY_PIN();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("80E60B1340", SKF_FLAG);
 	/*if (sw == "9000")
 	{
@@ -5906,7 +5907,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_90()
 {
 	SKF_SELECT_MF();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002201AA03870102", SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5923,7 +5924,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_91()
 {
 	SKF_SELECT_MF();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("00 22 81 b8 07 80 01 84 83 02 00 00", SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5941,7 +5942,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_92()
 {
 	SKF_SELECT_MF();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("00 22 41 b8 07 80 01 84 83 02 00 00", SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -5962,7 +5963,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_93()
 	sDataLen = "20";
 
 	//安全环境管理---计算HASH
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002201AA03870142", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -5975,7 +5976,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_93()
 	sCmd = "102A9080";
 	sCmd += sDataLen;
 	sCmd += sHashData;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -5988,7 +5989,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_93()
 	sCmd = "102A9080";
 	sCmd += sDataLen;
 	sCmd += sHashData;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -5999,7 +6000,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_93()
 
 	//hash_sm3_final
 	sCmd = "002A908020";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6020,7 +6021,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_94()
 	sDataLen = "80";
 
 	//安全环境管理---计算HASH
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002201AA03870142", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6033,7 +6034,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_94()
 	sCmd = "102A9080";
 	sCmd += sDataLen;
 	sCmd += sHashData;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6046,7 +6047,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_94()
 	sCmd = "102A9080";
 	sCmd += sDataLen;
 	sCmd += sHashData;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6057,7 +6058,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_94()
 
 	//hash_sm3_final
 	sCmd = "002A908020";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6084,18 +6085,18 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_95()
 	SKF_HASH_SM3();
 
 	//安全环境管理----sm2签名
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002241B6078001428402130A", SKF_FLAG);
 
 	//将哈希值放入硬件中
 	sCmd = "002A908120";
 	sCmd += g_sHashValue;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 
 	//SM2签名
 	sCmd = "002A9E0040";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	/*if (sw == "9000")
 	{
@@ -6121,18 +6122,18 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_96()
 	SKF_GENARATE_SM2_KEY_PAIR();
 
 	//安全环境管理----sm2签名
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("002241B6078001428402120A", SKF_FLAG);
 
 	//将哈希值放入硬件中
 	sCmd = "002A908120";
 	sCmd += g_sHashValue;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 
 	//SM2签名
 	sCmd = "002A9E0040";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw == "9000")
 	{
@@ -6192,7 +6193,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_99()
 	sCmd += sRelVecLen;
 	sCmd += sPadTyp;
 	sCmd += sFeedBit;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6207,7 +6208,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_99()
 	sKeyLen = "10";
 	sCmd += sKeyLen;
 	sCmd += sSm4Key;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6222,7 +6223,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_99()
 	sSrcLen = "20";
 	sCmd += sSrcLen;
 	sCmd += sSrc;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6237,7 +6238,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_99()
 	sSrcLen = "20";
 	sCmd += sSrcLen;
 	sCmd += sSrc;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6248,7 +6249,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_99()
 
 	//mac_final
 	sCmd = "80D7000010";
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6313,7 +6314,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_102()
 	SKF_GENARATE_RSA_KEY_PAIR();
 
 	//获取RSA公钥
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW("80E61B0280", SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6333,7 +6334,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_102()
 	}
 	sCmd.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6389,7 +6390,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_103()
 	}
 	sCmd.MakeUpper();
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6418,7 +6419,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_104()
 	sCmd += sRelVecLen;
 	sCmd += sPadTyp;
 	sCmd += sFeedBit;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6447,7 +6448,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_105()
 	sCmd += sRelVecLen;
 	sCmd += sPadTyp;
 	sCmd += sFeedBit;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6476,7 +6477,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_106()
 	sCmd += sRelVecLen;
 	sCmd += sPadTyp;
 	sCmd += sFeedBit;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6506,7 +6507,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_107()
 	sCmd += sPadTyp;
 	sCmd += sFeedBit;
 
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -6533,7 +6534,7 @@ void CPublish_ToolDlg::SKF_Functional_Testing_Case_108()
 	sCmd += sRelVecLen;
 	sCmd += sPadTyp;
 	sCmd += sFeedBit;
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	sw = SendCommandGetValueOrSW(sCmd, SKF_FLAG);
 	if (sw != "9000")
 	{
@@ -7571,7 +7572,6 @@ void CPublish_ToolDlg::OnBnClickedButtonGetCurrentState()
 	CString sValue;
 
 	ShowMessageString(_T("设置状态"));
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
 	sValue = SendCommandGetValueOrSW("8006000001", 0);
 	sValue = sValue.Left(2);
 
@@ -7596,7 +7596,7 @@ void CPublish_ToolDlg::OnBnClickedButtonSetState()
 
 
 	ShowMessageString(_T("设置状态"));
-	SendCommandGetValueOrSW(FIRST_CMD, FIRST_FLAG);
+	
 	SendCommandGetValueOrSW("8006" + str + "0100", SKF_FLAG);
 
 }
