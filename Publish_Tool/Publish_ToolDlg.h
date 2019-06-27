@@ -475,4 +475,10 @@ public:
 	HDEV hDevice;
 	PDRIVE_METH m_pMeth;
 
+	afx_msg void OnBnClickedButtonSelect();
+	afx_msg void OnBnClickedButtonDownload();
+	CEdit m_mFilePath;
+	CEdit m_mSetAddr;
+	afx_msg void OnBnClickedButtonSetAddr();
+	afx_msg void OnBnClickedButtonVerifySha1();
 };

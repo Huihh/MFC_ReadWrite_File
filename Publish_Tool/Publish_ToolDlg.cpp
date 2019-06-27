@@ -17,6 +17,8 @@
 #include "polarssl/rsa.h"
 #include "polarssl/sm2.h"
 
+#include "polarssl/sha1.h"
+
 #pragma comment(lib,"CCWinDriver.lib")
 
 
@@ -40,6 +42,11 @@ struct threadInfo
 	CRichEditCtrl *pResult;
 	CEdit *pCmd;
 }ThreadInfo;
+
+
+CString g_strExtName, g_strFilePath;
+UINT g_fileLen = 0;
+BYTE g_sha1Buf[20] = { 0 };
 
 
 BYTE	GP_KEY_ENC[16] = {0x40,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4A,0x4B,0x4C,0x4D,0x4E,0x4F};
@@ -280,6 +287,8 @@ void CPublish_ToolDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_POL_TEST_5, m_mPoliceCase5);
 	DDX_Control(pDX, IDC_POL_TEST_6, m_mPoliceCase6);
 	DDX_Control(pDX, IDC_CHECK_ACTIVATE_COS, m_mActivateCos);
+	DDX_Control(pDX, IDC_EDIT_FILE_NAME, m_mFilePath);
+	DDX_Control(pDX, IDC_EDIT_ADDR, m_mSetAddr);
 }
 
 BEGIN_MESSAGE_MAP(CPublish_ToolDlg, CDialogEx)
@@ -297,6 +306,10 @@ BEGIN_MESSAGE_MAP(CPublish_ToolDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_GET_CURRENT_STATE, &CPublish_ToolDlg::OnBnClickedButtonGetCurrentState)
 	ON_BN_CLICKED(IDC_BUTTON_SET_STATE, &CPublish_ToolDlg::OnBnClickedButtonSetState)
 	ON_BN_CLICKED(IDC_BUTTON_POL_SELECT_ALL, &CPublish_ToolDlg::OnBnClickedButtonPolSelectAll)
+	ON_BN_CLICKED(IDC_BUTTON_SELECT, &CPublish_ToolDlg::OnBnClickedButtonSelect)
+	ON_BN_CLICKED(IDC_BUTTON_DOWNLOAD, &CPublish_ToolDlg::OnBnClickedButtonDownload)
+	ON_BN_CLICKED(IDC_BUTTON_SET_ADDR, &CPublish_ToolDlg::OnBnClickedButtonSetAddr)
+	ON_BN_CLICKED(IDC_BUTTON_VERIFY_SHA1, &CPublish_ToolDlg::OnBnClickedButtonVerifySha1)
 END_MESSAGE_MAP()
 
 
@@ -335,6 +348,8 @@ BOOL CPublish_ToolDlg::OnInitDialog()
 	// TODO: 在此添加额外的初始化代码
 	CC_GetDriveMeth(&m_pMeth, 0);
 
+	SetDlgItemText(IDC_EDIT_ADDR, "0x00000000");
+
 	pWinThread = NULL;
 	ThreadInfo.pDlg = this;
 	ThreadInfo.pResult = &m_mResult;
@@ -355,6 +370,12 @@ BOOL CPublish_ToolDlg::OnInitDialog()
 	GetDlgItem(IDC_BUTTON_SEND_CMD)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON_GET_CURRENT_STATE)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON_SET_STATE)->EnableWindow(FALSE);
+
+	GetDlgItem(IDC_BUTTON_SET_ADDR)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_DOWNLOAD)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_VERIFY_SHA1)->EnableWindow(FALSE);
+
+
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -869,13 +890,13 @@ CString CPublish_ToolDlg::SendCommandGetValueOrSW(CString sCmd, int Flag)
 	int Rtn;
 	CString sSW;
 
-	BYTE ascCmd[12*1024] = {0};    //开由256->1024   是因为写DGI = 0201时会报错    by Huihh 2016.11.11  
+	BYTE ascCmd[8*1024] = {0};    //开由256->1024   是因为写DGI = 0201时会报错    by Huihh 2016.11.11  
 	WORD ascCmdLen = 0;
 
-	BYTE hexCmd[12*1024] = {0};
+	BYTE hexCmd[8*1024] = {0};
 	WORD hexCmdLen = 0;
 
-	BYTE RecvBuf[12*1024] = {0};
+	BYTE RecvBuf[8*1024] = {0};
 	unsigned long RecvBufLen = 4*1024; 
 
 	CString sDisp, sTemp;
@@ -1219,6 +1240,9 @@ void CPublish_ToolDlg::OnClickedButtonOpenClose()
 	GetDlgItem(IDC_BUTTON_POL_SELECT_ALL)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON_EXECUTE)->EnableWindow(TRUE);
 
+	GetDlgItem(IDC_BUTTON_SET_ADDR)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_DOWNLOAD)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_VERIFY_SHA1)->EnableWindow(TRUE);
 }
 
 
@@ -7603,3 +7627,355 @@ void CPublish_ToolDlg::OnBnClickedButtonSetState()
 
 
 
+
+
+void CPublish_ToolDlg::OnBnClickedButtonSelect()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	TCHAR szFilter[] = _T("可执行文件(*.bin)|*.bin|所有文件(*.*)|*.*||");
+
+	CFileDialog fileDlg(TRUE, NULL, NULL, 0, szFilter, this);
+
+	if (IDOK == fileDlg.DoModal()) {
+		g_strExtName = fileDlg.GetFileExt();
+
+		if (g_strExtName != "bin") {
+			AfxMessageBox(_T("请选择正确的文件类型(*.bin)"));
+			return;
+		}
+
+		g_strFilePath = fileDlg.GetPathName();
+		SetDlgItemText(IDC_EDIT_FILE_NAME, g_strFilePath);
+	}
+}
+
+
+void CPublish_ToolDlg::OnBnClickedButtonDownload()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	GetDlgItemText(IDC_EDIT_FILE_NAME, g_strFilePath);
+
+	BYTE readBuf[2048] = { 0 };
+	UINT totalLen = 0, offset = 0, readLen = 0;
+
+	if (g_strFilePath == "") {
+		AfxMessageBox(_T("请先选择要下载的可执行文件(*.bin)"));
+		return;
+	}
+
+	CStdioFile loadFile;
+	CFileException fileException;
+
+	if (!loadFile.Open(g_strFilePath, CFile::typeBinary | CFile::modeRead)) {
+		AfxMessageBox(_T("文件打开失败, 请重试"));
+		return;
+	
+	}
+
+	CString sDisp, sTemp, sSW;
+	BYTE hexCmd[8 * 1024] = {0x00, 0x04};
+	WORD hexCmdLen = 0;
+	BYTE RecvBuf[8 * 1024] = { 0 };
+	unsigned long RecvBufLen = 4 * 1024;
+	UINT Rtn = 0;
+
+
+	sha1_context ctx;
+
+	sha1_init(&ctx);
+	sha1_starts(&ctx);
+
+	while ((readLen = loadFile.Read(readBuf, 1024)) != 0) {
+		offset = totalLen;
+		totalLen += readLen;
+		hexCmd[2] = (offset >> 24) & 0xFF;
+		hexCmd[3] = (offset >> 16) & 0xFF;
+		hexCmd[4] = (offset >>  8) & 0xFF;
+		hexCmd[5] = (offset >>  0) & 0xFF;
+
+		memcpy(&hexCmd[6], readBuf, readLen);
+		hexCmdLen = 6 + readLen;
+
+		sha1_update(&ctx, readBuf, readLen);
+
+
+
+		sDisp = "-->: ";
+		for (int i = 0; i < hexCmdLen; i++)
+		{
+			sTemp.Format("%02x", hexCmd[i]);
+			sDisp += sTemp;
+		}
+		sDisp.MakeUpper();
+		ShowMessageString(sDisp);
+
+	ww:
+		if (Rtn = m_pMeth->WriteDeviceData(hDevice, hexCmd, hexCmdLen))
+		{
+			AfxMessageBox(_T("写数据到设备失败！"));
+			goto err;
+		}
+		do
+		{
+			if (Rtn = m_pMeth->ReadDeviceData(hDevice, RecvBuf, &RecvBufLen))
+			{
+				if (Rtn == DR_RD_BUSY)
+				{
+					//Sleep(10);
+					continue;
+				}
+				else if (Rtn == DR_RD_DATA)
+				{
+					goto ww;
+				}
+				else
+				{
+					AfxMessageBox(_T("从设备读数据失败！"));
+					goto err;
+				}
+			}
+			else {
+				break;
+			}
+
+		} while (1);
+
+
+		sDisp = "<--: ";
+		for (int i = 0; i < RecvBufLen; i++)
+		{
+			sTemp.Format("%02x", RecvBuf[i]);
+			sDisp += sTemp;
+
+			if (i >= (RecvBufLen - 2))
+			{
+				sSW += sTemp;
+			}
+		}
+		sDisp.Insert(sDisp.GetLength() - 4, "  ");
+		sDisp.MakeUpper();
+
+		if (sSW == "9000") {
+			ShowMessageString(sDisp);
+		}
+		else {
+			ShowMessageStringAlert(sDisp, COLOR_RED);
+			AfxMessageBox(_T("下载出现错误, 请重试"));
+			goto err;
+		}
+	}
+
+
+	sha1_finish(&ctx, g_sha1Buf);
+	sDisp = "";
+	for (int i = 0; i < 20; i++)
+	{
+		sTemp.Format("%02x", g_sha1Buf[i]);
+		sDisp += sTemp;
+	}
+	SetDlgItemText(IDC_EDIT_SHA1, sDisp);
+	g_fileLen = totalLen;
+	ShowMessageString(_T("下载成功"));
+	return;
+
+
+err:
+	m_pMeth->CloseDevice(hDevice);
+	return;
+
+}
+
+
+void CPublish_ToolDlg::OnBnClickedButtonSetAddr()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CString strAddr; 
+	GetDlgItemText(IDC_EDIT_ADDR, strAddr);
+	strAddr.Remove(' ');
+	strAddr = strAddr.Right(8);
+
+	CString sDisp, sTemp, sSW;
+	BYTE hexCmd[8 * 1024] = { 0x00, 0x03 };
+	WORD hexCmdLen = 0;
+	BYTE RecvBuf[8 * 1024] = { 0 };
+	unsigned long RecvBufLen = 4 * 1024;
+	UINT Rtn = 0;
+
+	CstringToByte(strAddr, &hexCmd[2]);
+	hexCmdLen = 6;
+
+	sDisp = "-->: ";
+	for (int i = 0; i < hexCmdLen; i++)
+	{
+		sTemp.Format("%02x", hexCmd[i]);
+		sDisp += sTemp;
+	}
+	sDisp.MakeUpper();
+	ShowMessageString(sDisp);
+
+ww:
+	if (Rtn = m_pMeth->WriteDeviceData(hDevice, hexCmd, hexCmdLen))
+	{
+		AfxMessageBox(_T("写数据到设备失败！"));
+		goto err;
+	}
+	do
+	{
+		if (Rtn = m_pMeth->ReadDeviceData(hDevice, RecvBuf, &RecvBufLen))
+		{
+			if (Rtn == DR_RD_BUSY)
+			{
+				//Sleep(10);
+				continue;
+			}
+			else if (Rtn == DR_RD_DATA)
+			{
+				goto ww;
+			}
+			else
+			{
+				AfxMessageBox(_T("从设备读数据失败！"));
+				goto err;
+			}
+		}
+		else {
+			break;
+		}
+
+	} while (1);
+
+
+	sDisp = "<--: ";
+	for (int i = 0; i < RecvBufLen; i++)
+	{
+		sTemp.Format("%02x", RecvBuf[i]);
+		sDisp += sTemp;
+
+		if (i >= (RecvBufLen - 2))
+		{
+			sSW += sTemp;
+		}
+	}
+	sDisp.Insert(sDisp.GetLength() - 4, "  ");
+	sDisp.MakeUpper();
+
+	if (sSW == "9000") {
+		ShowMessageString(sDisp);
+	}
+	else {
+		ShowMessageStringAlert(sDisp, COLOR_RED);
+		AfxMessageBox(_T("设置烧录地址失败, 请重试"));
+		goto err;
+	}
+
+	ShowMessageString(_T("设置烧录地址成功"));
+	return;
+
+err:
+	m_pMeth->CloseDevice(hDevice);
+	return;
+}
+
+
+void CPublish_ToolDlg::OnBnClickedButtonVerifySha1()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CString strSha1;
+	GetDlgItemText(IDC_EDIT_SHA1, strSha1);
+
+	if (strSha1 == "") {
+		AfxMessageBox(_T("请先下载可执行文件"));
+		return;
+	}
+
+
+	CString sDisp, sTemp, sSW;
+	BYTE hexCmd[8 * 1024] = { 0x00, 0x05 };
+	WORD hexCmdLen = 0;
+	BYTE RecvBuf[8 * 1024] = { 0 };
+	unsigned long RecvBufLen = 4 * 1024;
+	UINT Rtn = 0;
+
+	hexCmd[2] = (g_fileLen >> 24) & 0xFF;
+	hexCmd[3] = (g_fileLen >> 16) & 0xFF;
+	hexCmd[4] = (g_fileLen >>  8) & 0xFF;
+	hexCmd[5] = (g_fileLen >>  0) & 0xFF;
+
+	memcpy(&hexCmd[6], g_sha1Buf, 20);
+	hexCmdLen = 26;
+
+	sDisp = "-->: ";
+	for (int i = 0; i < hexCmdLen; i++)
+	{
+		sTemp.Format("%02x", hexCmd[i]);
+		sDisp += sTemp;
+	}
+	sDisp.MakeUpper();
+	ShowMessageString(sDisp);
+
+ww:
+	if (Rtn = m_pMeth->WriteDeviceData(hDevice, hexCmd, hexCmdLen))
+	{
+		AfxMessageBox(_T("写数据到设备失败！"));
+		goto err;
+	}
+	do
+	{
+		if (Rtn = m_pMeth->ReadDeviceData(hDevice, RecvBuf, &RecvBufLen))
+		{
+			if (Rtn == DR_RD_BUSY)
+			{
+				//Sleep(10);
+				continue;
+			}
+			else if (Rtn == DR_RD_DATA)
+			{
+				goto ww;
+			}
+			else
+			{
+				AfxMessageBox(_T("从设备读数据失败！"));
+				goto err;
+			}
+		}
+		else {
+			break;
+		}
+
+	} while (1);
+
+
+	sDisp = "<--: ";
+	for (int i = 0; i < RecvBufLen; i++)
+	{
+		sTemp.Format("%02x", RecvBuf[i]);
+		sDisp += sTemp;
+
+		if (i >= (RecvBufLen - 2))
+		{
+			sSW += sTemp;
+		}
+	}
+	sDisp.Insert(sDisp.GetLength() - 4, "  ");
+	sDisp.MakeUpper();
+
+	if (sSW == "9000") {
+		ShowMessageString(sDisp);
+	}
+	else {
+		ShowMessageStringAlert(sDisp, COLOR_RED);
+		AfxMessageBox(_T("校验哈希失败, 请重试"));
+		goto err;
+	}
+
+	ShowMessageString(_T("校验哈希成功"));
+	return;
+
+err:
+	m_pMeth->CloseDevice(hDevice);
+	return;
+
+
+
+
+}
