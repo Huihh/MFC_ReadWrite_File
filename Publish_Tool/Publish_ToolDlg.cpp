@@ -348,7 +348,7 @@ BOOL CPublish_ToolDlg::OnInitDialog()
 	// TODO: 在此添加额外的初始化代码
 	CC_GetDriveMeth(&m_pMeth, 0);
 
-	SetDlgItemText(IDC_EDIT_ADDR, "0x00000000");
+	SetDlgItemText(IDC_EDIT_ADDR, "0x00004000");
 
 	pWinThread = NULL;
 	ThreadInfo.pDlg = this;
