@@ -7742,6 +7742,7 @@ void CPublish_ToolDlg::OnBnClickedButtonDownload()
 
 
 		sDisp = "<--: ";
+		sSW = "";
 		for (int i = 0; i < RecvBufLen; i++)
 		{
 			sTemp.Format("%02x", RecvBuf[i]);
