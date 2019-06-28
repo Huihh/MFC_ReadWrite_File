@@ -349,6 +349,7 @@ BOOL CPublish_ToolDlg::OnInitDialog()
 	CC_GetDriveMeth(&m_pMeth, 0);
 
 	SetDlgItemText(IDC_EDIT_ADDR, "0x00004000");
+	SetDlgItemText(IDC_EDIT_SINGLE_CMD, "1122000000");
 
 	pWinThread = NULL;
 	ThreadInfo.pDlg = this;
@@ -1293,83 +1294,161 @@ UINT CPublish_ToolDlg::Thread_Execute(LPVOID pPram)
 int CPublish_ToolDlg::Process_Execute(LPVOID pPram)
 {
 	//Fs --8--
-	if (m_mCreateFile.GetCheck() == 1)
+	if (m_mCreateFile.GetCheck() == 1) {
 		SKF_CREATE_FILE();
-	if (m_mCreateMF.GetCheck() == 1)
+		m_mCreateFile.SetCheck(0);
+	}
+	if (m_mCreateMF.GetCheck() == 1) {
 		SKF_CREATE_MF();
-	if (m_mCreateDF1.GetCheck() == 1)
+		m_mCreateMF.SetCheck(0);
+	}
+	if (m_mCreateDF1.GetCheck() == 1) {
 		SKF_CREATE_DF0();
-	if (m_mCreateEF1.GetCheck() == 1)
+		m_mCreateDF1.SetCheck(0);
+	}
+	if (m_mCreateEF1.GetCheck() == 1) {
 		SKF_CREATE_EF0();
-	if (m_mDeleteFile.GetCheck() == 1)
+		m_mCreateEF1.SetCheck(0);
+	}
+	if (m_mDeleteFile.GetCheck() == 1) {
 		SKF_DELET_FILE();
-	if (m_mSelectFile.GetCheck() == 1)
+		m_mDeleteFile.SetCheck(0);
+	}
+	if (m_mSelectFile.GetCheck() == 1) {
 		SKF_SELECT_FILE();
-	if (m_mSelectMF.GetCheck() == 1)
+		m_mSelectFile.SetCheck(0);
+	}
+	if (m_mSelectMF.GetCheck() == 1) {
 		SKF_SELECT_MF();
-	if (m_mSelectDF1.GetCheck() == 1)
+		m_mSelectMF.SetCheck(0);
+	}
+	if (m_mSelectDF1.GetCheck() == 1) {
 		SKF_SELECT_DF0();
-	if (m_mSelectEF1.GetCheck() == 1)
+		m_mSelectDF1.SetCheck(0);
+	}
+	if (m_mSelectEF1.GetCheck() == 1) {
 		SKF_SELECT_EF0();
-	if (m_mReadFile.GetCheck() == 1)
+		m_mSelectEF1.SetCheck(0);
+	}
+	if (m_mReadFile.GetCheck() == 1) {
 		SKF_READ_FILE();
-	if (m_mWriteFile.GetCheck() == 1)
+		m_mReadFile.SetCheck(0);
+	}
+	if (m_mWriteFile.GetCheck() == 1) {
 		SKF_WRITE_FILE();
-	if (m_mGetAppList.GetCheck() == 1)
+		m_mWriteFile.SetCheck(0);
+	}
+	if (m_mGetAppList.GetCheck() == 1) {
 		SKF_GET_DF_LIST();
-	if (m_mGetFileList.GetCheck() == 1)
+		m_mGetAppList.SetCheck(0);
+	}
+	if (m_mGetFileList.GetCheck() == 1) {
 		SKF_GET_EF_LIST();
-	if (m_mGetDevInfo.GetCheck() == 1)
+		m_mGetFileList.SetCheck(0);
+	}
+	if (m_mGetDevInfo.GetCheck() == 1) {
 		SKF_GET_DEV_INFO();
-	if (m_mSetDevInfo.GetCheck() == 1)
+		m_mGetDevInfo.SetCheck(0);
+	}
+	if (m_mSetDevInfo.GetCheck() == 1) {
 		SKF_SET_DEV_INFO();
+		m_mSetDevInfo.SetCheck(0);
+	}
 
-	if (m_mGetRand.GetCheck() == 1)
+
+	if (m_mGetRand.GetCheck() == 1) {
 		SKF_GET_RAND();
-	if (m_mDeviceAuth.GetCheck() == 1)
+		m_mGetRand.SetCheck(0);
+	}
+	if (m_mDeviceAuth.GetCheck() == 1) {
 		SKF_DEVICE_AUTH();
-	if (m_mModDevAutKey.GetCheck() == 1)
+		m_mDeviceAuth.SetCheck(0);
+	}
+	if (m_mModDevAutKey.GetCheck() == 1) {
 		SKF_MODIFY_DEV_AUTH_KEY();
-	if (m_mModifyPin.GetCheck() == 1)
+		m_mModDevAutKey.SetCheck(0);
+	}
+	if (m_mModifyPin.GetCheck() == 1) {
 		SKF_MODIFY_PIN();
-	if (m_mVerifyPin.GetCheck() == 1)
+		m_mModifyPin.SetCheck(0);
+	}
+	if (m_mVerifyPin.GetCheck() == 1) {
 		SKF_VERIFY_PIN();
-	if (m_mUnBlockResetPin.GetCheck() == 1)
+		m_mVerifyPin.SetCheck(0);
+	}
+	if (m_mUnBlockResetPin.GetCheck() == 1) {
 		SKF_UNLOCK_RESET_PIN();
-	if (m_mGetSessionKey.GetCheck() == 1)
+		m_mUnBlockResetPin.SetCheck(0);
+	}
+	if (m_mGetSessionKey.GetCheck() == 1) {
 		SKF_GET_SESSION_KEY();
-	if (m_mGenRSAKey.GetCheck() == 1)
+		m_mGetSessionKey.SetCheck(0);
+	}
+	if (m_mGenRSAKey.GetCheck() == 1) {
 		SKF_GENARATE_RSA_KEY_PAIR();
-	if (m_mGenSM2Key.GetCheck() == 1)
+		m_mGenRSAKey.SetCheck(0);
+	}
+	if (m_mGenSM2Key.GetCheck() == 1) {
 		SKF_GENARATE_SM2_KEY_PAIR();
-	if (m_mGetRSAKey.GetCheck() == 1)
+		m_mGenSM2Key.SetCheck(0);
+	}
+	if (m_mGetRSAKey.GetCheck() == 1) {
 		SKF_EXPORT_PSA_PUB_KEY();
-	if (m_mGetSM2Key.GetCheck() == 1)
+		m_mGetRSAKey.SetCheck(0);
+	}
+	if (m_mGetSM2Key.GetCheck() == 1) {
 		SKF_EXPORT_SM2_PUB_KEY();
-	if (m_mImportPubKey.GetCheck() == 1)
+		m_mGetSM2Key.SetCheck(0);
+	}
+	if (m_mImportPubKey.GetCheck() == 1) {
 		SKF_IMPORT_PUBKEY();
-	if (m_mImportKey.GetCheck() == 1)
+		m_mImportPubKey.SetCheck(0);
+	}
+	if (m_mImportKey.GetCheck() == 1) {
 		SKF_IMPORT_KEY();
-	if (m_mDeletKey.GetCheck() == 1)
+		m_mImportKey.SetCheck(0);
+	}
+	if (m_mDeletKey.GetCheck() == 1) {
 		SKF_DELET_KEY();
-	if (m_mSessionKeyAlg.GetCheck() == 1)
+		m_mDeletKey.SetCheck(0);
+	}
+	if (m_mSessionKeyAlg.GetCheck() == 1) {
 		SKF_SESSION_KEY_ALG();
-	if (m_mSetMode.GetCheck() == 1)
+		m_mSessionKeyAlg.SetCheck(0);
+	}
+	if (m_mSetMode.GetCheck() == 1) {
 		SKF_SET_MODE();
-	if (m_mSymMac.GetCheck() == 1)
+		m_mSetMode.SetCheck(0);
+	}
+	if (m_mSymMac.GetCheck() == 1) {
 		SKF_SYM_MAC();
-	if (m_mSymEncrypt.GetCheck() == 1)
+		m_mSymMac.SetCheck(0);
+	}
+	if (m_mSymEncrypt.GetCheck() == 1) {
 		SKF_SYM_ENCRYPT();
-	if (m_mSymDecrypt.GetCheck() == 1)
+		m_mSymEncrypt.SetCheck(0);
+	}
+	if (m_mSymDecrypt.GetCheck() == 1) {
 		SKF_SYM_DECRYPT();
-	if (m_mSM3Hash.GetCheck() == 1)
+		m_mSymDecrypt.SetCheck(0);
+	}
+	if (m_mSM3Hash.GetCheck() == 1) {
 		SKF_HASH_SM3();
-	if (m_mSM2Sign.GetCheck() == 1)
+		m_mSM3Hash.SetCheck(0);
+	}
+	if (m_mSM2Sign.GetCheck() == 1) {
 		SKF_SM2_SIGN();
-	if (m_mSM2Vertfy.GetCheck() == 1)
+		m_mSM2Sign.SetCheck(0);
+	}
+	if (m_mSM2Vertfy.GetCheck() == 1) {
 		SKF_SM2_VERTFY();
-	if (m_mActivateCos.GetCheck() == 1)
+		m_mSM2Vertfy.SetCheck(0);
+	}
+	if (m_mActivateCos.GetCheck() == 1) {
 		SKF_ACTIVATE_COS();
+		m_mActivateCos.SetCheck(0);
+	}
+
 	
 	SKF_Functional_Testing();
 
@@ -6654,223 +6733,439 @@ void CPublish_ToolDlg::SKF_Functional_Testing_ShowResult(int i)
 
 void CPublish_ToolDlg::SKF_Functional_Testing_Done()
 {
-	if (m_mCase1.GetCheck() == 1)
+	if (m_mCase1.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_1();
-	if (m_mCase2.GetCheck() == 1)
+		m_mCase1.SetCheck(0);
+	}
+	if (m_mCase2.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_2();
+		m_mCase2.SetCheck(0);
+	}
 	if (m_mCase3.GetCheck() == 1)
+	{
 		SKF_Functional_Testing_Case_3();
-	if (m_mCase4.GetCheck() == 1)
+		m_mCase3.SetCheck(0);
+	}
+	if (m_mCase4.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_4();
-	if (m_mCase5.GetCheck() == 1)
+		m_mCase4.SetCheck(0);
+	}
+	if (m_mCase5.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_5();
-	if (m_mCase6.GetCheck() == 1)
+		m_mCase5.SetCheck(0);
+	}
+	if (m_mCase6.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_6();
-	if (m_mCase7.GetCheck() == 1)
+		m_mCase6.SetCheck(0);
+	}
+	if (m_mCase7.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_7();
-	if (m_mCase8.GetCheck() == 1)
+		m_mCase7.SetCheck(0);
+	}
+	if (m_mCase8.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_8();
-	if (m_mCase9.GetCheck() == 1)
+		m_mCase8.SetCheck(0);
+	}
+	if (m_mCase9.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_9();
-	if (m_mCase10.GetCheck() == 1)
+		m_mCase9.SetCheck(0);
+	}
+	if (m_mCase10.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_10();
-	if (m_mCase11.GetCheck() == 1)
+		m_mCase10.SetCheck(0);
+	}
+	if (m_mCase11.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_11();
-	if (m_mCase12.GetCheck() == 1)
+		m_mCase11.SetCheck(0);
+	}
+	if (m_mCase12.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_12();
-	if (m_mCase13.GetCheck() == 1)
+		m_mCase12.SetCheck(0);
+	}
+	if (m_mCase13.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_13();
-	if (m_mCase14.GetCheck() == 1)
+		m_mCase13.SetCheck(0);
+	}
+	if (m_mCase14.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_14();
-	if (m_mCase15.GetCheck() == 1)
+		m_mCase14.SetCheck(0);
+	}
+	if (m_mCase15.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_15();
-	if (m_mCase16.GetCheck() == 1)
+		m_mCase15.SetCheck(0);
+	}
+	if (m_mCase16.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_16();
-	if (m_mCase17.GetCheck() == 1)
+		m_mCase16.SetCheck(0);
+	}
+	if (m_mCase17.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_17();
-	if (m_mCase18.GetCheck() == 1)
+		m_mCase17.SetCheck(0);
+	}
+	if (m_mCase18.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_18();
-	if (m_mCase19.GetCheck() == 1)
+		m_mCase18.SetCheck(0);
+	}
+	if (m_mCase19.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_19();
-	if (m_mCase20.GetCheck() == 1)
+		m_mCase19.SetCheck(0);
+	}
+	if (m_mCase20.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_20();
-	if (m_mCase21.GetCheck() == 1)
+		m_mCase20.SetCheck(0);
+	}
+	if (m_mCase21.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_21();
-	if (m_mCase22.GetCheck() == 1)
+		m_mCase21.SetCheck(0);
+	}
+	if (m_mCase22.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_22();
-	if (m_mCase23.GetCheck() == 1)
+		m_mCase22.SetCheck(0);
+	}
+	if (m_mCase23.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_23();
-	if (m_mCase24.GetCheck() == 1)
+		m_mCase23.SetCheck(0);
+	}
+	if (m_mCase24.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_24();
-	if (m_mCase25.GetCheck() == 1)
+		m_mCase24.SetCheck(0);
+	}
+	if (m_mCase25.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_25();
-	if (m_mCase26.GetCheck() == 1)
+		m_mCase25.SetCheck(0);
+	}
+	if (m_mCase26.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_26();
-	if (m_mCase27.GetCheck() == 1)
+		m_mCase26.SetCheck(0);
+	}
+	if (m_mCase27.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_27();
-	if (m_mCase28.GetCheck() == 1)
+		m_mCase27.SetCheck(0);
+	}
+	if (m_mCase28.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_28();
-	if (m_mCase29.GetCheck() == 1)
+		m_mCase28.SetCheck(0);
+	}
+	if (m_mCase29.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_29();
-	if (m_mCase30.GetCheck() == 1)
+		m_mCase29.SetCheck(0);
+	}
+	if (m_mCase30.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_30();
-	if (m_mCase31.GetCheck() == 1)
+		m_mCase30.SetCheck(0);
+	}
+	if (m_mCase31.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_31();
-	if (m_mCase32.GetCheck() == 1)
+		m_mCase31.SetCheck(0);
+	}
+	if (m_mCase32.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_32();
-	if (m_mCase33.GetCheck() == 1)
+		m_mCase32.SetCheck(0);
+	}
+	if (m_mCase33.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_33();
-	if (m_mCase34.GetCheck() == 1)
+		m_mCase33.SetCheck(0);
+	}
+	if (m_mCase34.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_34();
-	if (m_mCase35.GetCheck() == 1)
+		m_mCase34.SetCheck(0);
+	}
+	if (m_mCase35.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_35();
-	if (m_mCase36.GetCheck() == 1)
+		m_mCase35.SetCheck(0);
+	}
+	if (m_mCase36.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_36();
-	if (m_mCase37.GetCheck() == 1)
+		m_mCase36.SetCheck(0);
+	}
+	if (m_mCase37.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_37();
-	if (m_mCase38.GetCheck() == 1)
+		m_mCase37.SetCheck(0);
+	}
+	if (m_mCase38.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_38();
-	if (m_mCase39.GetCheck() == 1)
+		m_mCase38.SetCheck(0);
+	}
+	if (m_mCase39.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_39();
-	if (m_mCase40.GetCheck() == 1)
+		m_mCase39.SetCheck(0);
+	}
+	if (m_mCase40.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_40();
-	if (m_mCase41.GetCheck() == 1)
+		m_mCase40.SetCheck(0);
+	}
+	if (m_mCase41.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_41();
-	if (m_mCase42.GetCheck() == 1)
+		m_mCase41.SetCheck(0);
+	}
+	if (m_mCase42.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_42();
-	if (m_mCase43.GetCheck() == 1)
+		m_mCase42.SetCheck(0);
+	}
+	if (m_mCase43.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_43();
-	if (m_mCase44.GetCheck() == 1)
+		m_mCase43.SetCheck(0);
+	}
+	if (m_mCase44.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_44();
-	if (m_mCase45.GetCheck() == 1)
+		m_mCase44.SetCheck(0);
+	}
+	if (m_mCase45.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_45();
-	if (m_mCase46.GetCheck() == 1)
+		m_mCase45.SetCheck(0);
+	}
+	if (m_mCase46.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_46();
-	if (m_mCase47.GetCheck() == 1)
+		m_mCase46.SetCheck(0);
+	}
+	if (m_mCase47.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_47();
-	if (m_mCase48.GetCheck() == 1)
+		m_mCase47.SetCheck(0);
+	}
+	if (m_mCase48.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_48();
-	if (m_mCase49.GetCheck() == 1)
+		m_mCase48.SetCheck(0);
+	}
+	if (m_mCase49.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_49();
-	if (m_mCase50.GetCheck() == 1)
+		m_mCase49.SetCheck(0);
+	}
+	if (m_mCase50.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_50();
-	if (m_mCase51.GetCheck() == 1)
+		m_mCase50.SetCheck(0);
+	}
+	if (m_mCase51.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_51();
-	if (m_mCase52.GetCheck() == 1)
+		m_mCase51.SetCheck(0);
+	}
+	if (m_mCase52.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_52();
-	if (m_mCase53.GetCheck() == 1)
+		m_mCase52.SetCheck(0);
+	}
+	if (m_mCase53.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_53();
-	if (m_mCase54.GetCheck() == 1)
+		m_mCase53.SetCheck(0);
+	}
+	if (m_mCase54.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_54();
-	if (m_mCase55.GetCheck() == 1)
+		m_mCase54.SetCheck(0);
+	}
+	if (m_mCase55.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_55();
-	if (m_mCase56.GetCheck() == 1)
+		m_mCase55.SetCheck(0);
+	}
+	if (m_mCase56.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_56();
-	if (m_mCase57.GetCheck() == 1)
+		m_mCase56.SetCheck(0);
+	}
+	if (m_mCase57.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_57();
-	if (m_mCase58.GetCheck() == 1)
+		m_mCase57.SetCheck(0);
+	}
+	if (m_mCase58.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_58();
-	if (m_mCase59.GetCheck() == 1)
+		m_mCase58.SetCheck(0);
+	}
+	if (m_mCase59.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_59();
-	if (m_mCase60.GetCheck() == 1)
+		m_mCase59.SetCheck(0);
+	}
+	if (m_mCase60.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_60();
-	if (m_mCase61.GetCheck() == 1)
+		m_mCase60.SetCheck(0);
+	}
+	if (m_mCase61.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_61();
-	if (m_mCase62.GetCheck() == 1)
+		m_mCase61.SetCheck(0);
+	}
+	if (m_mCase62.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_62();
-	if (m_mCase63.GetCheck() == 1)
+		m_mCase62.SetCheck(0);
+	}
+	if (m_mCase63.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_63();
-	if (m_mCase64.GetCheck() == 1)
+		m_mCase63.SetCheck(0);
+	}
+	if (m_mCase64.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_64();
-	if (m_mCase65.GetCheck() == 1)
+		m_mCase64.SetCheck(0);
+	}
+	if (m_mCase65.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_65();
-	if (m_mCase66.GetCheck() == 1)
+		m_mCase65.SetCheck(0);
+	}
+	if (m_mCase66.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_66();
-	if (m_mCase67.GetCheck() == 1)
+		m_mCase66.SetCheck(0);
+	}
+	if (m_mCase67.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_67();
-	if (m_mCase68.GetCheck() == 1)
+		m_mCase67.SetCheck(0);
+	}
+	if (m_mCase68.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_68();
-	if (m_mCase69.GetCheck() == 1)
+		m_mCase68.SetCheck(0);
+	}
+	if (m_mCase69.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_69();
-	if (m_mCase70.GetCheck() == 1)
+		m_mCase69.SetCheck(0);
+	}
+	if (m_mCase70.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_70();
-	if (m_mCase71.GetCheck() == 1)
+		m_mCase70.SetCheck(0);
+	}
+	if (m_mCase71.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_71();
-	if (m_mCase72.GetCheck() == 1)
+		m_mCase71.SetCheck(0);
+	}
+	if (m_mCase72.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_72();
-	if (m_mCase73.GetCheck() == 1)
+		m_mCase72.SetCheck(0);
+	}
+	if (m_mCase73.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_73();
-	if (m_mCase74.GetCheck() == 1)
+		m_mCase73.SetCheck(0);
+	}
+	if (m_mCase74.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_74();
-	if (m_mCase75.GetCheck() == 1)
+		m_mCase74.SetCheck(0);
+	}
+	if (m_mCase75.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_75();
-	if (m_mCase76.GetCheck() == 1)
+		m_mCase75.SetCheck(0);
+	}
+	if (m_mCase76.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_76();
-	if (m_mCase77.GetCheck() == 1)
+		m_mCase76.SetCheck(0);
+	}
+	if (m_mCase77.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_77();
-	if (m_mCase78.GetCheck() == 1)
+		m_mCase77.SetCheck(0);
+	}
+	if (m_mCase78.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_78();
-	if (m_mCase79.GetCheck() == 1)
+		m_mCase78.SetCheck(0);
+	}
+	if (m_mCase79.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_79();
-	if (m_mCase80.GetCheck() == 1)
+		m_mCase79.SetCheck(0);
+	}
+	if (m_mCase80.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_80();
-	if (m_mCase81.GetCheck() == 1)
+		m_mCase80.SetCheck(0);
+	}
+	if (m_mCase81.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_81();
-	if (m_mCase82.GetCheck() == 1)
+		m_mCase81.SetCheck(0);
+	}
+	if (m_mCase82.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_82();
-	if (m_mCase83.GetCheck() == 1)
+		m_mCase82.SetCheck(0);
+	}
+	if (m_mCase83.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_83();
-	if (m_mCase84.GetCheck() == 1)
+		m_mCase83.SetCheck(0);
+	}
+	if (m_mCase84.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_84();
-	if (m_mCase85.GetCheck() == 1)
+		m_mCase84.SetCheck(0);
+	}
+	if (m_mCase85.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_85();
-	if (m_mCase86.GetCheck() == 1)
+		m_mCase85.SetCheck(0);
+	}
+	if (m_mCase86.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_86();
-	if (m_mCase87.GetCheck() == 1)
+		m_mCase86.SetCheck(0);
+	}
+	if (m_mCase87.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_87();
-	if (m_mCase88.GetCheck() == 1)
+		m_mCase87.SetCheck(0);
+	}
+	if (m_mCase88.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_88();
-	if (m_mCase89.GetCheck() == 1)
+		m_mCase88.SetCheck(0);
+	}
+	if (m_mCase89.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_89();
-	if (m_mCase90.GetCheck() == 1)
+		m_mCase89.SetCheck(0);
+	}
+	if (m_mCase90.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_90();
-	if (m_mCase91.GetCheck() == 1)
+		m_mCase90.SetCheck(0);
+	}
+	if (m_mCase91.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_91();
-	if (m_mCase92.GetCheck() == 1)
+		m_mCase91.SetCheck(0);
+	}
+	if (m_mCase92.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_92();
-	if (m_mCase93.GetCheck() == 1)
+		m_mCase92.SetCheck(0);
+	}
+	if (m_mCase93.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_93();
-	if (m_mCase94.GetCheck() == 1)
+		m_mCase93.SetCheck(0);
+	}
+	if (m_mCase94.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_94();
-	if (m_mCase95.GetCheck() == 1)
+		m_mCase94.SetCheck(0);
+	}
+	if (m_mCase95.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_95();
-	if (m_mCase96.GetCheck() == 1)
+		m_mCase95.SetCheck(0);
+	}
+	if (m_mCase96.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_96();
-	if (m_mCase97.GetCheck() == 1)
+		m_mCase96.SetCheck(0);
+	}
+	if (m_mCase97.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_97();
-	if (m_mCase98.GetCheck() == 1)
+		m_mCase97.SetCheck(0);
+	}
+	if (m_mCase98.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_98();
-	if (m_mCase99.GetCheck() == 1)
+		m_mCase98.SetCheck(0);
+	}
+	if (m_mCase99.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_99();
-	if (m_mCase100.GetCheck() == 1)
+		m_mCase99.SetCheck(0);
+	}
+	if (m_mCase100.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_100();
-	if (m_mCase101.GetCheck() == 1)
+		m_mCase100.SetCheck(0);
+	}
+	if (m_mCase101.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_101();
-	if (m_mCase102.GetCheck() == 1)
+		m_mCase101.SetCheck(0);
+	}
+	if (m_mCase102.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_102();
-	if (m_mCase103.GetCheck() == 1)
+		m_mCase102.SetCheck(0);
+	}
+	if (m_mCase103.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_103();
-	if (m_mCase104.GetCheck() == 1)
+		m_mCase103.SetCheck(0);
+	}
+	if (m_mCase104.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_104();
-	if (m_mCase105.GetCheck() == 1)
+		m_mCase104.SetCheck(0);
+	}
+	if (m_mCase105.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_105();
-	if (m_mCase106.GetCheck() == 1)
+		m_mCase105.SetCheck(0);
+	}
+	if (m_mCase106.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_106();
-	if (m_mCase107.GetCheck() == 1)
+		m_mCase106.SetCheck(0);
+	}
+	if (m_mCase107.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_107();
-	if (m_mCase108.GetCheck() == 1)
+		m_mCase107.SetCheck(0);
+	}
+	if (m_mCase108.GetCheck() == 1) {
 		SKF_Functional_Testing_Case_108();
-
+		m_mCase108.SetCheck(0);
+	}
 }
 
 
@@ -7166,18 +7461,31 @@ void CPublish_ToolDlg::SKF_Police_Testing_ShowResult(int i)
 
 void CPublish_ToolDlg::SKF_Police_Testing_Done()
 {
-	if (m_mPoliceCase1.GetCheck() == 1)
+	if (m_mPoliceCase1.GetCheck() == 1) {
 		SKF_Police_Testing_Case_1();
-	if (m_mPoliceCase2.GetCheck() == 1)
+		m_mPoliceCase1.SetCheck(0);
+	}
+	if (m_mPoliceCase2.GetCheck() == 1) {
 		SKF_Police_Testing_Case_2();
-	if (m_mPoliceCase3.GetCheck() == 1)
+		m_mPoliceCase2.SetCheck(0);
+	}
+	if (m_mPoliceCase3.GetCheck() == 1) {
 		SKF_Police_Testing_Case_3();
-	if (m_mPoliceCase4.GetCheck() == 1)
+		m_mPoliceCase3.SetCheck(0);
+	}
+	if (m_mPoliceCase4.GetCheck() == 1) {
 		SKF_Police_Testing_Case_4();
-	if (m_mPoliceCase5.GetCheck() == 1)
+		m_mPoliceCase4.SetCheck(0);
+	}
+	if (m_mPoliceCase5.GetCheck() == 1) {
 		SKF_Police_Testing_Case_5();
-	if (m_mPoliceCase6.GetCheck() == 1)
+		m_mPoliceCase5.SetCheck(0);
+	}
+	if (m_mPoliceCase6.GetCheck() == 1) {
 		SKF_Police_Testing_Case_6();
+		m_mPoliceCase6.SetCheck(0);
+	}
+
 }
 
 
@@ -7402,7 +7710,7 @@ void CPublish_ToolDlg::OnBnClickedButtonIkiselectAll()
 		m_mCase107.SetCheck(1);
 		m_mCase108.SetCheck(1);
 
-		g_bLogON = FALSE;
+		g_bLogON = TRUE;
 
 		GetDlgItem(IDC_BUTTON_IKI_SELECT_ALL)->SetWindowTextA(_T("È«²»Ñ¡"));
 	}
