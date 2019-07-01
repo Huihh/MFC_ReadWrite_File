@@ -289,6 +289,8 @@ void CPublish_ToolDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CHECK_ACTIVATE_COS, m_mActivateCos);
 	DDX_Control(pDX, IDC_EDIT_FILE_NAME, m_mFilePath);
 	DDX_Control(pDX, IDC_EDIT_ADDR, m_mSetAddr);
+	DDX_Control(pDX, IDC_EDIT_FILE_PATH, m_mFilePath);
+	DDX_Control(pDX, IDC_EDIT_SAVE_PATH, m_mSavePath);
 }
 
 BEGIN_MESSAGE_MAP(CPublish_ToolDlg, CDialogEx)
@@ -310,6 +312,8 @@ BEGIN_MESSAGE_MAP(CPublish_ToolDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_DOWNLOAD, &CPublish_ToolDlg::OnBnClickedButtonDownload)
 	ON_BN_CLICKED(IDC_BUTTON_SET_ADDR, &CPublish_ToolDlg::OnBnClickedButtonSetAddr)
 	ON_BN_CLICKED(IDC_BUTTON_VERIFY_SHA1, &CPublish_ToolDlg::OnBnClickedButtonVerifySha1)
+	ON_BN_CLICKED(IDC_BUTTON_READ_FLASH, &CPublish_ToolDlg::OnBnClickedButtonReadFlash)
+	ON_BN_CLICKED(IDC_BUTTON_SELECT_PATH, &CPublish_ToolDlg::OnBnClickedButtonSelectPath)
 END_MESSAGE_MAP()
 
 
@@ -351,6 +355,8 @@ BOOL CPublish_ToolDlg::OnInitDialog()
 	SetDlgItemText(IDC_EDIT_ADDR, "0x00004000");
 	SetDlgItemText(IDC_EDIT_SINGLE_CMD, "1122000000");
 
+	SetDlgItemText(IDC_EDIT_SAVE_PATH, "E:\\Work\\PYTHON\\SD\\log.txt");
+
 	pWinThread = NULL;
 	ThreadInfo.pDlg = this;
 	ThreadInfo.pResult = &m_mResult;
@@ -376,6 +382,7 @@ BOOL CPublish_ToolDlg::OnInitDialog()
 	GetDlgItem(IDC_BUTTON_DOWNLOAD)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON_VERIFY_SHA1)->EnableWindow(FALSE);
 
+	GetDlgItem(IDC_BUTTON_READ_FLASH)->EnableWindow(FALSE);
 
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -1187,6 +1194,27 @@ void CPublish_ToolDlg::OnClickedButtonRefreshReader()
 	UINT uType = 0, exist = 0;
 	TCHAR* p = NULL;
 
+
+	GetDlgItem(IDC_BUTTON_FS_SELECT_ALL)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_BUSNISS_SELECT_ALL)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_IKI_SELECT_ALL)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_POL_SELECT_ALL)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_EXECUTE)->EnableWindow(FALSE);
+
+	GetDlgItem(IDC_BUTTON_SEND_CMD)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_GET_CURRENT_STATE)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_SET_STATE)->EnableWindow(FALSE);
+
+	GetDlgItem(IDC_BUTTON_SET_ADDR)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_DOWNLOAD)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_VERIFY_SHA1)->EnableWindow(FALSE);
+
+	GetDlgItem(IDC_BUTTON_READ_FLASH)->EnableWindow(FALSE);
+
+	m_mResult.SetWindowTextA(_T(""));
+	m_mTestResult.SetWindowTextA(_T(""));
+
+
 	for (p = buf; *p; p += (_tcslen(p) + 1)) {
 		LPCTSTR sDrivePath = p;
 		str = sDrivePath;
@@ -1201,7 +1229,6 @@ void CPublish_ToolDlg::OnClickedButtonRefreshReader()
 	if (exist == 0) {
 		AfxMessageBox(_T("没有检测到 SD 卡, 请重新插拔"));
 	}
-
 }
 
 
@@ -1244,6 +1271,8 @@ void CPublish_ToolDlg::OnClickedButtonOpenClose()
 	GetDlgItem(IDC_BUTTON_SET_ADDR)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON_DOWNLOAD)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON_VERIFY_SHA1)->EnableWindow(TRUE);
+
+	GetDlgItem(IDC_BUTTON_READ_FLASH)->EnableWindow(TRUE);
 }
 
 
@@ -8287,4 +8316,154 @@ err:
 
 
 
+}
+
+
+void CPublish_ToolDlg::OnBnClickedButtonReadFlash()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CString strSavePath;
+	GetDlgItemText(IDC_EDIT_SAVE_PATH, strSavePath);
+
+	BYTE readBuf[2048] = { 0 };
+	UINT totalLen = 0, offset = 0, readLen = 0;
+
+	if (strSavePath == "") {
+		AfxMessageBox(_T("请先选择要保存的路径"));
+		return;
+	}
+
+	CStdioFile saveFile;
+	CFileException fileException;
+
+	if (!saveFile.Open(strSavePath, CFile::modeCreate | CFile::typeText | CFile::modeWrite)) {
+		AfxMessageBox(_T("文件打开失败, 请重试"));
+		return;
+	}
+
+	CString sDisp, sTemp, sSW, strContent;
+	BYTE hexCmd[8 * 1024] = { 0x06, 0x80, 0x80, 0x00, 0x00, 0x08, 0x00, 0x03, 0x20, 0x00, 0x00, 0x00, 0x04, 0x00};
+	WORD hexCmdLen = 0;
+	BYTE RecvBuf[8 * 1024] = { 0 };
+	unsigned long RecvBufLen = 4 * 1024;
+	UINT Rtn = 0;
+
+	UINT addr = 0x00032000;
+
+	//文件系统共 260K, 每次读 1024 字节, 读 260 次  by Huihh 2019.07.01
+	for (int i = 0; i < 260; i++) {
+		hexCmd[6] = (addr >> 24) & 0xFF;
+		hexCmd[7] = (addr >> 16) & 0xFF;
+		hexCmd[8] = (addr >>  8) & 0xFF;
+		hexCmd[9] = (addr >>  0) & 0xFF;
+
+		addr += 0x400;
+
+		hexCmdLen = 14; //Type(1) + Cla(1) + Ins(1) + P1P2(2) + Lc(1) + Addr(4) + Len(4)    by Huihh 2019.07.01
+
+
+		sDisp = "-->: ";
+		for (int i = 0; i < (hexCmdLen - 1); i++)
+		{
+			sTemp.Format("%02x", hexCmd[i+1]);
+			sDisp += sTemp;
+		}
+		sDisp.MakeUpper();
+		ShowMessageString(sDisp);
+	
+	ww:
+		if (Rtn = m_pMeth->WriteDeviceData(hDevice, hexCmd, hexCmdLen))
+		{
+			AfxMessageBox(_T("写数据到设备失败！"));
+			goto err;
+		}
+		do
+		{
+			if (Rtn = m_pMeth->ReadDeviceData(hDevice, RecvBuf, &RecvBufLen))
+			{
+				if (Rtn == DR_RD_BUSY)
+				{
+					//Sleep(10);
+					continue;
+				}
+				else if (Rtn == DR_RD_DATA)
+				{
+					goto ww;
+				}
+				else
+				{
+					AfxMessageBox(_T("从设备读数据失败！"));
+					goto err;
+				}
+			}
+			else {
+				break;
+			}
+
+		} while (1);
+
+
+		sDisp = "<--: ";
+		sSW = "";
+		strContent = "";
+		for (int i = 0; i < RecvBufLen; i++)
+		{
+			sTemp.Format("%02x", RecvBuf[i]);
+			sDisp += sTemp;
+
+			if (i >= (RecvBufLen - 2)) {
+				sSW += sTemp;
+			}
+			else {
+				strContent += sTemp;
+			}
+
+		}
+		sDisp.Insert(sDisp.GetLength() - 4, "  ");
+		sDisp.MakeUpper();
+
+		if (sSW == "9000") {
+
+			saveFile.Write(strContent, strContent.GetLength());
+			ShowMessageString(sDisp);
+		}
+		else {
+			ShowMessageStringAlert(sDisp, COLOR_RED);
+			AfxMessageBox(_T("读 FLASH 出现错误, 请重试"));
+			goto err;
+		}
+	}
+
+	saveFile.Close();
+	ShowMessageString(_T("读 FLASH 成功"));
+	return;
+
+
+err:
+	m_pMeth->CloseDevice(hDevice);
+	return;
+}
+
+
+void CPublish_ToolDlg::OnBnClickedButtonSelectPath()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	CString strSavePath;
+
+	TCHAR szFilter[] = _T("文本文件(*.txt)|*.txt|所有文件(*.*)|*.*||");
+
+	CFileDialog fileDlg(FALSE, "txt", NULL, 0, szFilter, this);
+
+	if (IDOK == fileDlg.DoModal()) {
+		g_strExtName = fileDlg.GetFileExt();
+
+		if (g_strExtName != "txt") {
+			AfxMessageBox(_T("请选择正确的保存文件类型(*.txt)"));
+			return;
+		}
+
+		strSavePath = fileDlg.GetPathName();
+		SetDlgItemText(IDC_EDIT_SAVE_PATH, strSavePath);
+	}
 }

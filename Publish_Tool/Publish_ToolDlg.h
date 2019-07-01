@@ -481,4 +481,7 @@ public:
 	CEdit m_mSetAddr;
 	afx_msg void OnBnClickedButtonSetAddr();
 	afx_msg void OnBnClickedButtonVerifySha1();
+	afx_msg void OnBnClickedButtonReadFlash();
+	afx_msg void OnBnClickedButtonSelectPath();
+	CEdit m_mSavePath;
 };
