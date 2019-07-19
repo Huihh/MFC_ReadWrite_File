@@ -484,4 +484,5 @@ public:
 	afx_msg void OnBnClickedButtonReadFlash();
 	afx_msg void OnBnClickedButtonSelectPath();
 	CEdit m_mSavePath;
+	CEdit m_mPrifex;
 };

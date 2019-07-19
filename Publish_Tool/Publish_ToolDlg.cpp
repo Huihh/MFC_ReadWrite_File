@@ -289,8 +289,8 @@ void CPublish_ToolDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CHECK_ACTIVATE_COS, m_mActivateCos);
 	DDX_Control(pDX, IDC_EDIT_FILE_NAME, m_mFilePath);
 	DDX_Control(pDX, IDC_EDIT_ADDR, m_mSetAddr);
-	DDX_Control(pDX, IDC_EDIT_FILE_PATH, m_mFilePath);
 	DDX_Control(pDX, IDC_EDIT_SAVE_PATH, m_mSavePath);
+	DDX_Control(pDX, IDC_EDIT_PREFIX, m_mPrifex);
 }
 
 BEGIN_MESSAGE_MAP(CPublish_ToolDlg, CDialogEx)
@@ -352,8 +352,9 @@ BOOL CPublish_ToolDlg::OnInitDialog()
 	// TODO: 在此添加额外的初始化代码
 	CC_GetDriveMeth(&m_pMeth, 0);
 
-	SetDlgItemText(IDC_EDIT_ADDR, "0x00004000");
-	SetDlgItemText(IDC_EDIT_SINGLE_CMD, "1122000000");
+	SetDlgItemText(IDC_EDIT_ADDR, "0x00008000");
+	SetDlgItemText(IDC_EDIT_SINGLE_CMD, "8082000040");
+	SetDlgItemText(IDC_EDIT_PREFIX, "06");
 
 	SetDlgItemText(IDC_EDIT_SAVE_PATH, "E:\\Work\\PYTHON\\SD\\log.txt");
 
@@ -930,7 +931,16 @@ CString CPublish_ToolDlg::SendCommandGetValueOrSW(CString sCmd, int Flag)
 		return NULL;
 	}
 
-	sCmd = "06" + sCmd;
+
+	CString sPrifix;
+	GetDlgItemText(IDC_EDIT_PREFIX, sPrifix);
+
+	if (sPrifix.GetLength() != 2) {
+		ShowMessageStringAlert(_T("sPrifix is 1 Octet, Range is (00, 01, 02, 03, 04, 05, 06, 07, FF), Please Try Again"), COLOR_RED);
+		return NULL;
+	}
+
+	sCmd = sPrifix + sCmd;
 
 	strcpy((char *)ascCmd, sCmd);
 	ascCmdLen = strlen((char *)ascCmd);
