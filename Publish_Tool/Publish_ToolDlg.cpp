@@ -8477,3 +8477,5 @@ void CPublish_ToolDlg::OnBnClickedButtonSelectPath()
 		SetDlgItemText(IDC_EDIT_SAVE_PATH, strSavePath);
 	}
 }
+
+
