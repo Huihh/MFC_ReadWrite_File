@@ -86,7 +86,7 @@ public:
 	BOOL ExAuthen(CString sKey);
 	void CPublish_ToolDlg::CstringToByte(CString sInput, BYTE bOutput[]);
 
-
+	
 
 	int TransmitData_PCSC(BYTE SendBuf[], int SendLen, BYTE RecvBuf[], unsigned long *RecvLen);
 	CString SendCommandGetValueOrSW(CString sCmd, int Flag);
@@ -101,9 +101,9 @@ public:
 
 	BOOL TerminateThreadExecute(CWinThread *pWinThread);
 
-
-
-
+	void StringToHex(CString str, BYTE buf[], UINT *len);
+	void ShowMessageBuf(BYTE buf[], UINT len);
+	UINT CheckAESParaLegal(UINT type, CString str);
 
 
 
@@ -485,4 +485,13 @@ public:
 	afx_msg void OnBnClickedButtonSelectPath();
 	CEdit m_mSavePath;
 	CEdit m_mPrifex;
+	afx_msg void OnBnClickedButtonEnc();
+	afx_msg void OnBnClickedButtonDec();
+	CEdit m_mInputData;
+	CEdit m_mPlainText;
+	CEdit m_mIV;
+	CEdit m_mAAD;
+	CEdit m_mTAG;
+	CEdit m_mCliper;
+	afx_msg void OnBnClickedButtonClean();
 };

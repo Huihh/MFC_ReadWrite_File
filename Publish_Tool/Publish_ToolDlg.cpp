@@ -5,6 +5,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <string.h>
 
 #include "stdafx.h"
 #include "Publish_Tool.h"
@@ -18,6 +19,11 @@
 #include "polarssl/sm2.h"
 
 #include "polarssl/sha1.h"
+
+#include "DHCryptlib.h"
+#include "AESHead.h"
+
+
 
 #pragma comment(lib,"CCWinDriver.lib")
 
@@ -33,6 +39,15 @@
 #define COLOR_GREEN		0x00FF00
 #define COLOR_BLUE		0x0000FF
 
+
+
+
+#define AES_PLAINTEXT_TYPE	0x00	
+#define AES_KEY_TYPE		0x01
+#define AES_IV_TYPE			0x02
+#define AES_AAD_TYPE		0x03
+#define AES_TAG_TYPE		0x04
+#define AES_CLIPER_TYPE		0x05
 
 
 
@@ -291,6 +306,11 @@ void CPublish_ToolDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_ADDR, m_mSetAddr);
 	DDX_Control(pDX, IDC_EDIT_SAVE_PATH, m_mSavePath);
 	DDX_Control(pDX, IDC_EDIT_PREFIX, m_mPrifex);
+	DDX_Control(pDX, IDC_EDIT_PLAINTEXT, m_mPlainText);
+	DDX_Control(pDX, IDC_EDIT_IV, m_mIV);
+	DDX_Control(pDX, IDC_EDIT_AAD, m_mAAD);
+	DDX_Control(pDX, IDC_EDIT_TAG, m_mTAG);
+	DDX_Control(pDX, IDC_EDIT_CLIPER, m_mCliper);
 }
 
 BEGIN_MESSAGE_MAP(CPublish_ToolDlg, CDialogEx)
@@ -314,6 +334,9 @@ BEGIN_MESSAGE_MAP(CPublish_ToolDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_VERIFY_SHA1, &CPublish_ToolDlg::OnBnClickedButtonVerifySha1)
 	ON_BN_CLICKED(IDC_BUTTON_READ_FLASH, &CPublish_ToolDlg::OnBnClickedButtonReadFlash)
 	ON_BN_CLICKED(IDC_BUTTON_SELECT_PATH, &CPublish_ToolDlg::OnBnClickedButtonSelectPath)
+	ON_BN_CLICKED(IDC_BUTTON_ENC, &CPublish_ToolDlg::OnBnClickedButtonEnc)
+	ON_BN_CLICKED(IDC_BUTTON_DEC, &CPublish_ToolDlg::OnBnClickedButtonDec)
+	ON_BN_CLICKED(IDC_BUTTON_CLEAN, &CPublish_ToolDlg::OnBnClickedButtonClean)
 END_MESSAGE_MAP()
 
 
@@ -357,6 +380,18 @@ BOOL CPublish_ToolDlg::OnInitDialog()
 	SetDlgItemText(IDC_EDIT_PREFIX, "06");
 
 	SetDlgItemText(IDC_EDIT_SAVE_PATH, "E:\\Work\\PYTHON\\SD\\log.txt");
+
+
+	SetDlgItemText(IDC_EDIT_PLAINTEXT, "");
+	SetDlgItemText(IDC_EDIT_KEY, "000102030405060708090A0B0C0D0E0F");
+	SetDlgItemText(IDC_EDIT_IV, "4D4D4D0000BC614E01234567");
+	SetDlgItemText(IDC_EDIT_AAD, "10D0D1D2D3D4D5D6D7D8D9DADBDCDDDEDFC0010000080000010000FF0200");
+	SetDlgItemText(IDC_EDIT_TAG, "");
+	SetDlgItemText(IDC_EDIT_CLIPER, "");
+
+
+
+
 
 	pWinThread = NULL;
 	ThreadInfo.pDlg = this;
@@ -8478,4 +8513,285 @@ void CPublish_ToolDlg::OnBnClickedButtonSelectPath()
 	}
 }
 
+void CPublish_ToolDlg::StringToHex(CString str, BYTE buf[], UINT *len)
+{
+	BYTE ascBuf[8 * 1024] = { 0 };
+	WORD ascBufLen = 0;
 
+
+	str.Remove(' ');  // Remove space in cmd
+
+	strcpy((char*)ascBuf, str);
+	ascBufLen = strlen((char*)ascBuf);
+
+	AsciiToHex(ascBuf, buf, ascBufLen);
+	*len = (UINT)(ascBufLen / 2);
+}
+
+
+
+void CPublish_ToolDlg::ShowMessageBuf(BYTE buf[], UINT len)
+{
+	CString sDisp, sTemp;
+	UINT i = 0;
+
+	for (i = 0; i < len; i++) {
+		sTemp.Format("%02x", buf[i]);
+		sDisp += sTemp;
+	}
+
+	sDisp.MakeUpper();
+
+	ShowMessageString(sDisp);
+}
+
+UINT CPublish_ToolDlg::CheckAESParaLegal(UINT type, CString str)
+{
+	if (str.GetLength() % 2 != 0)
+		return 0;
+
+
+	if (type == AES_PLAINTEXT_TYPE) {
+		/* Nothing TODO */
+	} 
+	else if (type == AES_KEY_TYPE) {
+		if (str.GetLength() / 2 != 0x10)
+			return 0;
+	}
+	else if (type == AES_IV_TYPE) {
+		if (str.GetLength() / 2 != 0x0C)
+			return 0;
+	}
+	else if (type == AES_AAD_TYPE) {
+		/* Nothing TODO */
+	}
+	else if (type == AES_TAG_TYPE) {
+		/* Nothing TODO */
+	}
+	else if (type == AES_CLIPER_TYPE) {
+		/* Nothing TODO */
+	}
+	else {
+		return 0;
+	}
+
+	return 1;
+}
+
+void CPublish_ToolDlg::OnBnClickedButtonEnc()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+
+	GetDlgItem(IDC_EDIT_TAG)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_CLIPER)->EnableWindow(FALSE);
+
+
+	BYTE PlainText[1024] = { 0 };
+	BYTE Key[32] = { 0 };
+	BYTE IV[32] = { 0 };
+	BYTE AAD[32] = { 0 };
+	BYTE Tag[32] = { 0 };
+	BYTE Cliper[1024] = { 0 };
+
+	INT retCode = 0;
+
+	UINT PlainTextLen = 0, KeyLen = 0, IVLen = 0, AADLen = 0, TagLen = 0, CliperLen = 0;
+
+	CString strPlainText, strKey, strIV, strAAD, strTag, strCliper;
+
+	CString sDisp, sTemp;
+	UINT i = 0;
+
+
+	GetDlgItemText(IDC_EDIT_PLAINTEXT, strPlainText);
+	GetDlgItemText(IDC_EDIT_KEY, strKey);
+	GetDlgItemText(IDC_EDIT_IV, strIV);
+	GetDlgItemText(IDC_EDIT_AAD, strAAD);
+	GetDlgItemText(IDC_EDIT_TAG, strTag);
+	GetDlgItemText(IDC_EDIT_CLIPER, strCliper);
+
+
+	retCode = CheckAESParaLegal(AES_KEY_TYPE, strKey);
+	if (retCode != 0x01) {
+		MessageBox(_T("Key is illegal, Try again after check"));
+		return;
+	}
+	
+	retCode = CheckAESParaLegal(AES_IV_TYPE, strIV);
+	if (retCode != 0x01) {
+		MessageBox(_T("IV is illegal, Try again after check"));
+		return;
+	}
+
+	retCode = CheckAESParaLegal(AES_AAD_TYPE, strAAD);
+	if (retCode != 0x01) {
+		MessageBox(_T("AAD is illegal, Try again after check"));
+		return;
+	}
+
+	StringToHex(strPlainText, PlainText, &PlainTextLen);
+	StringToHex(strKey, Key, &KeyLen);
+	StringToHex(strIV, IV, &IVLen);
+	StringToHex(strAAD, AAD, &AADLen);
+	StringToHex(strTag, Tag, &TagLen);
+	StringToHex(strCliper, Cliper, &CliperLen);
+
+
+	ShowMessageString(_T("Input Para:"));
+	ShowMessageString("  Key: " + strKey);
+	ShowMessageString("  IV: " + strIV);
+	ShowMessageString("  AAD: " + strAAD);
+
+	retCode = Encrypt_ByteData(Key, KeyLen, IV, IVLen, AAD, AADLen, PlainText, PlainTextLen, Cliper, Tag);
+	if (retCode != 1) {
+		ShowMessageStringAlert("Encrypto Failed, Try again after check", COLOR_RED);
+		return;
+	}
+
+	TagLen = 12;
+	CliperLen = PlainTextLen;
+	
+	ShowMessageString(_T("Output Result:"));
+
+	//MAC 值, 即 TAG
+	sDisp = "";
+	for (i = 0; i < TagLen; i++) {
+		sTemp.Format("%02x", Tag[i]);
+		sDisp += sTemp;
+	}
+	sDisp.MakeUpper();
+
+	ShowMessageString("  Enc_Tag: " + sDisp);
+	SetDlgItemTextA(IDC_EDIT_TAG, sDisp);
+
+	//密文
+	sDisp = "";
+	for (i = 0; i < CliperLen; i++) {
+		sTemp.Format("%02x", Cliper[i]);
+		sDisp += sTemp;
+	}
+	sDisp.MakeUpper();
+	
+	ShowMessageString("  Enc_Data: " + sDisp);
+	SetDlgItemTextA(IDC_EDIT_CLIPER, sDisp);
+
+
+	ShowMessageString("Encrypto Success");
+}
+
+
+void CPublish_ToolDlg::OnBnClickedButtonDec()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	GetDlgItem(IDC_EDIT_PLAINTEXT)->EnableWindow(FALSE);
+
+
+	BYTE PlainText[1024] = { 0 };
+	BYTE Key[32] = { 0 };
+	BYTE IV[32] = { 0 };
+	BYTE AAD[32] = { 0 };
+	BYTE Tag[32] = { 0 };
+	BYTE Cliper[1024] = { 0 };
+
+	INT retCode = 0;
+
+	UINT PlainTextLen = 0, KeyLen = 0, IVLen = 0, AADLen = 0, TagLen = 0, CliperLen = 0;
+
+	CString strPlainText, strKey, strIV, strAAD, strTag, strCliper;
+
+	CString sDisp, sTemp;
+	UINT i = 0;
+
+
+	GetDlgItemText(IDC_EDIT_PLAINTEXT, strPlainText);
+	GetDlgItemText(IDC_EDIT_KEY, strKey);
+	GetDlgItemText(IDC_EDIT_IV, strIV);
+	GetDlgItemText(IDC_EDIT_AAD, strAAD);
+	GetDlgItemText(IDC_EDIT_TAG, strTag);
+	GetDlgItemText(IDC_EDIT_CLIPER, strCliper);
+
+
+
+	retCode = CheckAESParaLegal(AES_KEY_TYPE, strKey);
+	if (retCode != 0x01) {
+		MessageBox(_T("Key is illegal, Try again after check"));
+		return;
+	}
+
+	retCode = CheckAESParaLegal(AES_IV_TYPE, strIV);
+	if (retCode != 0x01) {
+		MessageBox(_T("IV is illegal, Try again after check"));
+		return;
+	}
+
+	retCode = CheckAESParaLegal(AES_AAD_TYPE, strAAD);
+	if (retCode != 0x01) {
+		MessageBox(_T("AAD is illegal, Try again after check"));
+		return;
+	}
+
+	retCode = CheckAESParaLegal(AES_TAG_TYPE, strTag);
+	if (retCode != 0x01) {
+		MessageBox(_T("Tag is illegal, Try again after check"));
+		return;
+	}
+
+	retCode = CheckAESParaLegal(AES_CLIPER_TYPE, strCliper);
+	if (retCode != 0x01) {
+		MessageBox(_T("Cliper is illegal, Try again after check"));
+		return;
+	}
+
+
+	StringToHex(strPlainText, PlainText, &PlainTextLen);
+	StringToHex(strKey, Key, &KeyLen);
+	StringToHex(strIV, IV, &IVLen);
+	StringToHex(strAAD, AAD, &AADLen);
+	StringToHex(strTag, Tag, &TagLen);
+	StringToHex(strCliper, Cliper, &CliperLen);
+
+	ShowMessageString(_T("Input Para:"));
+	ShowMessageString("  Key: " + strKey);
+	ShowMessageString("  IV: " + strIV);
+	ShowMessageString("  AAD: " + strAAD);
+	ShowMessageString("  Tag: " + strTag);
+	ShowMessageString("  Cliper: " + strCliper);
+
+	
+	retCode = Decrypt_ByteData(Key, IV, AAD, AADLen, Cliper, (int*)(&CliperLen), Tag, PlainText);
+	if (retCode != 1) {
+		ShowMessageStringAlert("Decrypto Failed, Try again after check", COLOR_RED);
+		return;
+	}
+
+	PlainTextLen = CliperLen;
+
+	ShowMessageString(_T("Output Result:"));
+	
+	//明文
+	sDisp = "";
+	for (i = 0; i < PlainTextLen; i++) {
+		sTemp.Format("%02x", PlainText[i]);
+		sDisp += sTemp;
+	}
+	sDisp.MakeUpper();
+
+	ShowMessageString("  Dec_Data: " + sDisp);
+	SetDlgItemText(IDC_EDIT_PLAINTEXT, sDisp);
+
+
+	ShowMessageString("Decrypto Success");
+}
+
+
+void CPublish_ToolDlg::OnBnClickedButtonClean()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	GetDlgItem(IDC_EDIT_TAG)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_CLIPER)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_PLAINTEXT)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_AAD)->EnableWindow(TRUE);
+
+}
